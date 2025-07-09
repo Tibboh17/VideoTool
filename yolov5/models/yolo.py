@@ -48,7 +48,6 @@ from models.common import (
     GhostBottleneck,
     GhostConv,
     Proto,
-    A_MSFFE
 )
 from models.experimental import MixConv2d
 from utils.autoanchor import check_anchor_order
@@ -171,13 +170,6 @@ class BaseModel(nn.Module):
             y.append(x if m.i in self.save else None)  # save output
             if visualize:
                 feature_visualization(x, m.type, m.i, save_dir=visualize)
-
-        # === A-MSFFE 적용 ===
-        if hasattr(self, "amfsse"):
-            c2, c3, c4 = y[4], y[6], y[9]
-            print(f"[A-MSFFE] c2: {c2.shape}, c3: {c3.shape}, c4: {c4.shape}")
-            p3 = self.amfsse(c2, c3, c4)
-            y[4] = p3  # 또는 y[2]에 저장하셔도 됨, detect head 연결에 따라 결정
         return x
 
     def _profile_one_layer(self, m, x, dt):
@@ -247,8 +239,7 @@ class DetectionModel(BaseModel):
             LOGGER.info(f"Overriding model.yaml anchors with anchors={anchors}")
             self.yaml["anchors"] = round(anchors)  # override yaml value
         self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist
-        self.save += [2, 3, 4]  # 🔥 A-MSFFE가 참조하는 backbone 출력 보존
-        # self.names = [str(i) for i in range(self.yaml["nc"])]  # default names
+        self.names = [str(i) for i in range(self.yaml["nc"])]  # default names
         self.inplace = self.yaml.get("inplace", True)
 
         # Build strides, anchors
@@ -269,7 +260,6 @@ class DetectionModel(BaseModel):
 
         # Init weights, biases
         initialize_weights(self)
-        self.amfsse = A_MSFFE(128, 256, 512, 256)
         self.info()
         LOGGER.info("")
 
@@ -445,7 +435,7 @@ def parse_model(d, ch):
             c2 = sum(ch[x] for x in f)
         # TODO: channel, gw, gd
         elif m in {Detect, Segment}:
-            args.append([ch[x] for x in f] if isinstance(f, list) else [ch[f]])
+            args.append([ch[x] for x in f])
             if isinstance(args[1], int):  # number of anchors
                 args[1] = [list(range(args[1] * 2))] * len(f)
             if m is Segment:
@@ -455,7 +445,7 @@ def parse_model(d, ch):
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
         else:
-            c2 = sum([ch[x] for x in f]) if isinstance(f, list) else ch[f]
+            c2 = ch[f]
 
         m_ = nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace("__main__.", "")  # module type

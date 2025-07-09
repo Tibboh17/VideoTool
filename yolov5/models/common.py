@@ -1121,26 +1121,3 @@ class Classify(nn.Module):
         if isinstance(x, list):
             x = torch.cat(x, 1)
         return self.linear(self.drop(self.pool(self.conv(x)).flatten(1)))
-
-class A_MSFFE(nn.Module):
-    def __init__(self, c2_channels, c3_channels, c4_channels, out_channels):
-        super(A_MSFFE, self).__init__()
-        self.up_c4 = nn.Sequential(
-            nn.ConvTranspose2d(c4_channels, c3_channels, 2, 2),
-            nn.BatchNorm2d(c3_channels),
-            nn.ReLU(inplace=True)
-        )
-        self.down_c2 = nn.Sequential(
-            nn.Conv2d(c2_channels, c3_channels, kernel_size=3, stride=2, padding=1),  # 🔽 다운샘플링 추가
-            nn.BatchNorm2d(c3_channels),
-            nn.ReLU(inplace=True)
-        )
-        self.out_conv = nn.Conv2d(c3_channels, out_channels, kernel_size=3, padding=1)
-
-    def forward(self, c2, c3, c4):
-        up_c4 = self.up_c4(c4)           # [B, 256, 40, 40]
-        f3 = up_c4 + c3                  # [B, 256, 40, 40]
-        down_c2 = self.down_c2(c2)       # [B, 256, 40, 40]
-        f3 = f3 + down_c2                # [B, 256, 40, 40]
-        out = self.out_conv(f3)          # [B, 256, 40, 40]
-        return out

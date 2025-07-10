@@ -1,6 +1,6 @@
 path: ./dataset
 train: images/train
-test: images/test
+test: images/test_new
 val: images/val
 
 nc: 1

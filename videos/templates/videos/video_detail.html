@@ -1,0 +1,158 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}{{ video.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2>{{ video.title }}</h2>
+                <p class="text-muted">{{ video.uploaded_at|date:"Y년 m월 d일 H:i" }}</p>
+                
+                <!-- 동영상 플레이어 - stream URL 사용 -->
+                <div class="ratio ratio-16x9 mb-3">
+                    <video 
+                        id="videoPlayer"
+                        controls 
+                        preload="metadata"
+                    >
+                        <source src="{% url 'serve_video' video.pk %}" type="video/mp4">
+                        브라우저가 동영상 재생을 지원하지 않습니다.
+                    </video>
+                </div>
+
+                {% if video.description %}
+                <div class="mt-3">
+                    <h5>설명</h5>
+                    <p>{{ video.description|linebreaks }}</p>
+                </div>
+                {% endif %}
+
+                <div class="mt-3">
+                    <h5>정보</h5>
+                    <ul class="list-unstyled">
+                        <li><strong>파일 크기:</strong> {{ video.get_file_size_display }}</li>
+                        <li><strong>업로드 일시:</strong> {{ video.uploaded_at|date:"Y-m-d H:i:s" }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 분석 이력 카드 -->
+        {% if video.analyses.exists %}
+        <div class="card">
+            <div class="card-header">
+                <h5>분석 이력</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for analysis in video.analyses.all %}
+                    <a href="{% url 'analysis_result' analysis.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                {% if analysis.status == 'completed' %}
+                                    <span class="badge bg-success">완료</span>
+                                {% elif analysis.status == 'processing' %}
+                                    <span class="badge bg-primary">처리 중</span>
+                                {% elif analysis.status == 'failed' %}
+                                    <span class="badge bg-danger">실패</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">대기</span>
+                                {% endif %}
+                                전처리 분석
+                            </h6>
+                            <small>{{ analysis.created_at|date:"m/d H:i" }}</small>
+                        </div>
+                        <p class="mb-1 small">
+                            파이프라인: 
+                            {% for step in analysis.get_pipeline_display %}
+                                {{ step }}{% if not forloop.last %} → {% endif %}
+                            {% empty %}
+                                없음
+                            {% endfor %}
+                        </p>
+                        <small class="text-muted">진행률: {{ analysis.progress }}%</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>작업</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <!-- 분석 시작 버튼 -->
+                    <a href="{% url 'start_analysis' video.pk %}" class="btn btn-success btn-lg">
+                        <i class="bi bi-play-fill"></i> 분석 시작
+                    </a>
+                    
+                    <!-- 다운로드 -->
+                    <a href="{{ video.file.url }}" download class="btn btn-secondary">
+                        <i class="bi bi-download"></i> 다운로드
+                    </a>
+                    
+                    <!-- 삭제 -->
+                    <a href="{% url 'video_delete' video.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> 삭제
+                    </a>
+                    
+                    <!-- 목록으로 -->
+                    <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 목록으로
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 분석 정보 카드 -->
+        <div class="card">
+            <div class="card-header">
+                <h5>분석 정보</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    이 동영상에 대해 전처리 분석을 수행할 수 있습니다.
+                </p>
+                <ul class="small">
+                    <li>Harris Corner Detection</li>
+                    <li>Gaussian Blur</li>
+                    <li>Canny Edge Detection</li>
+                    <li>그 외 다양한 전처리</li>
+                </ul>
+                <p class="small text-muted mb-0">
+                    여러 전처리를 순차적으로 적용할 수 있습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('videoPlayer');
+    
+    video.addEventListener('loadedmetadata', function() {
+        console.log('✅ 동영상 로드 완료');
+        console.log('Duration:', video.duration);
+        console.log('Seekable:', video.seekable.length > 0);
+    });
+    
+    video.addEventListener('seeking', function() {
+        console.log('⏩ Seeking to:', video.currentTime);
+    });
+    
+    video.addEventListener('seeked', function() {
+        console.log('✅ Seeked to:', video.currentTime);
+    });
+    
+    video.addEventListener('error', function(e) {
+        console.error('❌ 동영상 에러:', e);
+    });
+</script>
+{% endblock %}

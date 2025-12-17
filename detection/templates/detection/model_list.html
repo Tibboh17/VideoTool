@@ -1,0 +1,133 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}모델 목록{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- 헤더 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-cpu"></i> 감지 모델 목록</h1>
+        <a href="{% url 'detection_model_add' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> 모델 추가
+        </a>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_models }}</h3>
+                    <p class="mb-0 text-muted">전체 모델</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ yolo_models }}</h3>
+                    <p class="mb-0 text-muted">YOLO 모델</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ custom_models }}</h3>
+                    <p class="mb-0 text-muted">Custom 모델</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모델 목록 -->
+    {% if models %}
+    <div class="row">
+        {% for model in models %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    {% if model.model_type == 'yolo' %}
+                        <span class="badge bg-primary">{{ model.get_model_type_display }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ model.get_model_type_display }}</span>
+                    {% endif %}
+                    
+                    {% if model.is_active %}
+                    <span class="badge bg-success">활성</span>
+                    {% else %}
+                    <span class="badge bg-secondary">비활성</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ model.name }}</h5>
+                    
+                    <p class="card-text">
+                        {% if model.description %}
+                            {{ model.description|truncatewords:15 }}
+                        {% else %}
+                            <span class="text-muted">설명 없음</span>
+                        {% endif %}
+                    </p>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        {% if model.yolo_version %}
+                        <p class="mb-1">
+                            <i class="bi bi-box"></i> 
+                            <strong>버전:</strong> {{ model.yolo_version }}
+                        </p>
+                        {% endif %}
+                        
+                        {% if model.model_file %}
+                        <p class="mb-1">
+                            <i class="bi bi-file-earmark"></i> 
+                            <strong>파일:</strong> {{ model.get_file_size_display }}
+                        </p>
+                        {% endif %}
+                        
+                        <p class="mb-1">
+                            <i class="bi bi-sliders"></i> 
+                            <strong>신뢰도:</strong> {{ model.config.conf_threshold|default:"0.25" }}
+                        </p>
+                        
+                        <p class="mb-0">
+                            <i class="bi bi-calendar"></i> 
+                            {{ model.created_at|date:"Y-m-d" }}
+                        </p>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'detection_model_detail' model.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-info-circle"></i> 상세 보기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <h5><i class="bi bi-exclamation-triangle"></i> 등록된 모델이 없습니다</h5>
+        <p class="mb-0">감지 작업을 수행하려면 먼저 모델을 추가해주세요.</p>
+    </div>
+    {% endif %}
+
+    <!-- 네비게이션 버튼 -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <a href="{% url 'detection_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-speedometer2"></i> 대시보드
+                </a>
+                <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-film"></i> 동영상 목록
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

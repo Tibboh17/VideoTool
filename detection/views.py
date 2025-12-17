@@ -3,11 +3,17 @@ from django.http import JsonResponse, HttpResponse, StreamingHttpResponse, Http4
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.conf import settings
 from analysis.models import Analysis
-from .models import Detection, DetectionModel
+from .models import (
+    Detection, 
+    DetectionModel, 
+    get_default_model_path, 
+    get_custom_model_path, 
+    sanitize_model_filename
+)
 import os
 import re
-from django.conf import settings
 from wsgiref.util import FileWrapper
 
 def model_list(request):
@@ -39,7 +45,6 @@ def model_add(request):
         
         # 설정
         conf_threshold = request.POST.get('conf_threshold', '0.25')
-        
         try:
             conf_threshold = float(conf_threshold)
         except:
@@ -49,13 +54,44 @@ def model_add(request):
             'conf_threshold': conf_threshold,
         }
         
+        # 검증
+        if model_type == 'yolo':
+            if not model_file and not yolo_version:
+                messages.error(request, 'YOLO 모델은 파일을 업로드하거나 버전을 지정해야 합니다.')
+                return redirect('detection_model_add')
+        elif model_type == 'custom':
+            if not model_file:
+                messages.error(request, '커스텀 모델은 파일 업로드가 필수입니다.')
+                return redirect('detection_model_add')
+        
+        # 모델 경로 저장
+        model_path = ''
+        if model_file:
+            # 파일 저장
+            if model_type == 'yolo':
+                save_path = get_default_model_path(model_file.name)
+            else:
+                save_path = get_custom_model_path(model_file.name)
+            
+            # 디렉토리 생성
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            
+            # 파일 저장
+            with open(save_path, 'wb+') as destination:
+                for chunk in model_file.chunks():
+                    destination.write(chunk)
+            
+            # 상대 경로 저장
+            model_path = os.path.relpath(save_path, settings.MODELS_ROOT)
+            print(f"✅ 모델 파일 저장: {save_path}")
+        
         # 모델 생성
         model = DetectionModel.objects.create(
             name=name,
             model_type=model_type,
             description=description,
+            model_path=model_path,
             yolo_version=yolo_version if model_type == 'yolo' and not model_file else '',
-            model_file=model_file,
             config=config,
         )
         

@@ -28,9 +28,24 @@
 
     <!-- 오른쪽: 전처리 선택 -->
     <div class="col-md-5">
+        <!-- 전처리 생략 옵션 추가 -->
+        <div class="card mb-0 shadow-sm" style="border-bottom: none; border-radius: 15px 15px 0 0;"> 
+            <div class="card-body text-center"> 
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="skip_preprocessing" value="true">
+                    <button type="submit" class="btn w-100 py-2 fw-bold" 
+                            style="background-color: #4a69bd; color: #ffffff; border: none; border-radius: 8px;">
+                        전처리 없이 바로 모델 적용
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 기존 전처리 파이프라인 카드 -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4>전처리 파이프라인</h4>
+                <h6 class="mb-0 fw-bold">전처리 파이프라인</h6>
                 <span class="badge bg-primary" id="pipelineCount">{{ current_pipeline|length }}개</span>
             </div>
             <div class="card-body">
@@ -66,14 +81,16 @@
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button id="addStepBtn" class="btn btn-primary" disabled>
-                        <i class="bi bi-plus-circle"></i> 파이프라인에 추가
+                    <button id="addStepBtn" class="btn text-white" style="background-color: #778ca3; border: none;" disabled>
+                        파이프라인에 추가
                     </button>
-                    <button id="removeStepBtn" class="btn btn-warning" {% if not current_pipeline %}disabled{% endif %}>
-                        <i class="bi bi-arrow-counterclockwise"></i> 마지막 단계 제거
+                    <button id="removeStepBtn" class="btn w-100" style="background-color: #f1f2f6; border: 1px solid #ced4da; color: #57606f; font-size: 0.9rem;" 
+                    {% if not current_pipeline %}disabled{% endif %}>
+                        마지막 단계 제거
                     </button>
-                    <button id="clearPipelineBtn" class="btn btn-secondary" {% if not current_pipeline %}disabled{% endif %}>
-                        <i class="bi bi-trash"></i> 전체 초기화
+                    <button id="clearPipelineBtn" class="btn w-100" style="background-color: #fff5f5; border: 1px solid #ffa8a8; color: #e03131; font-size: 0.9rem;" 
+                    {% if not current_pipeline %}disabled{% endif %}>
+                        전체 초기화
                     </button>
                 </div>
 
@@ -81,8 +98,10 @@
 
                 <!-- 실행 버튼 -->
                 <div class="d-grid gap-2">
-                    <button id="executeBtn" class="btn btn-success btn-lg">
-                        <i class="bi bi-play-fill"></i> 전처리 실행
+                    <button id="executeBtn" class="btn btn-lg w-100 py-2 fw-bold shadow-sm"  
+                        style="background-color: #4a69bd; color: #ffffff; border: none; border-radius: 8px; font-size: 1.05rem;"
+                        {% if not current_pipeline %}disabled{% endif %}>
+                        전처리 실행
                     </button>
                     <a href="{% url 'video_detail' video.pk %}" class="btn btn-outline-secondary">
                         취소
@@ -222,6 +241,7 @@ document.getElementById('addStepBtn').addEventListener('click', function() {
             // 버튼 활성화
             document.getElementById('removeStepBtn').disabled = false;
             document.getElementById('clearPipelineBtn').disabled = false;
+            document.getElementById('executeBtn').disabled = false;
         }
     });
 });
@@ -243,6 +263,7 @@ document.getElementById('removeStepBtn').addEventListener('click', function() {
             if (data.pipeline.length === 0) {
                 document.getElementById('removeStepBtn').disabled = true;
                 document.getElementById('clearPipelineBtn').disabled = true;
+                document.getElementById('executeBtn').disabled = true;
             }
         }
     });
@@ -269,6 +290,7 @@ document.getElementById('clearPipelineBtn').addEventListener('click', function()
                 if (data.pipeline.length === 0) {
                     document.getElementById('removeStepBtn').disabled = true;
                     document.getElementById('clearPipelineBtn').disabled = true;
+                    document.getElementById('executeBtn').disabled = true;
                 } else {
                     removeAll();  // 재귀 호출
                 }
@@ -310,6 +332,16 @@ function updatePipelineDisplay(pipeline) {
 #pipelineList .list-group-item {
     background-color: #f8f9fa;
     border-left: 4px solid #0d6efd;
+}
+
+button:disabled {
+    opacity: 0.4 !important;      /* 버튼을 투명하게 만들어 흐릿하게 보임 */
+    filter: grayscale(50%);      /* 색상을 회색으로 바꿈 */
+}
+
+/* 빠른 시작 카드 강조 */
+.border-info {
+    border-width: 2px !important;
 }
 </style>
 {% endblock %}

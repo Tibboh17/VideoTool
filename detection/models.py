@@ -1,13 +1,62 @@
 from django.db import models
 from analysis.models import Analysis
+from django.utils import timezone
 import json
 import os
 from pathlib import Path
+import re
+
+def sanitize_model_filename(filename):
+    """모델 파일명을 안전하게 정리"""
+    name, ext = os.path.splitext(filename)
+    name = name.replace(' ', '_')
+    name = re.sub(r'[^\w\-]', '', name)
+    name = re.sub(r'_+', '_', name)
+    name = name.strip('_')
+    
+    if not name:
+        name = 'model'
+    
+    return name, ext.lower()
+
+def get_default_model_path(filename):
+    """기본 모델 저장 경로"""
+    from django.conf import settings
+    name, ext = sanitize_model_filename(filename)
+    
+    default_models_dir = getattr(
+        settings, 
+        'DEFAULT_MODELS_DIR', 
+        settings.MODELS_ROOT / 'default'
+    )
+    
+    return os.path.join(
+        default_models_dir,
+        f"{name}{ext}"
+    )
+
+def get_custom_model_path(filename):
+    """커스텀 모델 저장 경로"""
+    from django.conf import settings
+    now = timezone.now()
+    name, ext = sanitize_model_filename(filename)
+    
+    custom_models_dir = getattr(
+        settings, 
+        'CUSTOM_MODELS_DIR', 
+        settings.MODELS_ROOT / 'custom'
+    )
+    
+    return os.path.join(
+        custom_models_dir,
+        str(now.year),
+        f"{name}_{now.strftime('%m%d%H%M%S')}{ext}"
+    )
 
 class DetectionModel(models.Model):
     """감지/분류 모델 정의"""
     MODEL_TYPES = [
-        ('yolo', 'YOLO (객체 감지)'),
+        ('yolo', 'YOLO'),
         ('custom', 'Custom Model'),
     ]
     
@@ -15,19 +64,18 @@ class DetectionModel(models.Model):
     model_type = models.CharField(max_length=50, choices=MODEL_TYPES, verbose_name='모델 타입')
     description = models.TextField(blank=True, verbose_name='설명')
     
-    # ⭐ 모델 파일 업로드
-    model_file = models.FileField(
-        upload_to='detection_models/', 
-        blank=True, 
-        null=True, 
-        verbose_name='모델 파일',
-        help_text='YOLO: .pt 파일, Custom: .pt, .pth, .onnx 등'
+    # 모델 파일 경로 (FileField 대신 CharField 사용)
+    model_path = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name='모델 파일 경로',
+        help_text='models/ 디렉토리 기준 상대 경로'
     )
     
     # 모델 설정
     config = models.JSONField(default=dict, blank=True, verbose_name='모델 설정')
     
-    # YOLO 기본 모델 (파일 업로드 없이 사용)
+    # YOLO 기본 모델 (파일 없이 버전만 지정)
     yolo_version = models.CharField(
         max_length=50, 
         blank=True, 
@@ -48,9 +96,10 @@ class DetectionModel(models.Model):
         return f"{self.name} ({self.get_model_type_display()})"
     
     def get_model_path(self):
-        """모델 파일 경로 반환"""
-        if self.model_file:
-            return self.model_file.path
+        """모델 파일의 전체 경로 반환"""
+        if self.model_path:
+            # models/ 디렉토리의 상대 경로를 절대 경로로 변환
+            return os.path.join(settings.MODELS_ROOT, self.model_path)
         elif self.yolo_version:
             # YOLO 기본 모델은 ultralytics가 자동 다운로드
             return self.yolo_version
@@ -58,8 +107,9 @@ class DetectionModel(models.Model):
     
     def get_file_size(self):
         """모델 파일 크기"""
-        if self.model_file and os.path.exists(self.model_file.path):
-            return os.path.getsize(self.model_file.path)
+        full_path = self.get_model_path()
+        if full_path and full_path != self.yolo_version and os.path.exists(full_path):
+            return os.path.getsize(full_path)
         return 0
     
     def get_file_size_display(self):
@@ -74,16 +124,28 @@ class DetectionModel(models.Model):
             size /= 1024.0
         return f"{size:.1f} TB"
     
+    def get_storage_type(self):
+        """저장 위치 타입 반환"""
+        if self.yolo_version and not self.model_path:
+            return "기본 (자동 다운로드)"
+        elif self.model_path:
+            if 'default' in self.model_path:
+                return "기본 (업로드)"
+            else:
+                return "커스텀"
+        return "알 수 없음"
+    
     def delete_files(self):
         """모델 파일 삭제"""
         deleted_files = []
         
-        if self.model_file:
+        if self.model_path:
+            full_path = self.get_model_path()
             try:
-                if os.path.exists(self.model_file.path):
-                    os.remove(self.model_file.path)
-                    deleted_files.append(self.model_file.path)
-                    print(f"✅ 모델 파일 삭제: {self.model_file.path}")
+                if os.path.exists(full_path):
+                    os.remove(full_path)
+                    deleted_files.append(full_path)
+                    print(f"✅ 모델 파일 삭제: {full_path}")
             except Exception as e:
                 print(f"⚠️  모델 파일 삭제 실패: {e}")
         

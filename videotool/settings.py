@@ -19,6 +19,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# 모델 파일
+MODELS_ROOT = BASE_DIR / 'models'
+
+# 기본 모델, 커스텀 모델 디렉토리
+DEFAULT_MODELS_DIR = MODELS_ROOT / 'default'
+CUSTOM_MODELS_DIR = MODELS_ROOT / 'custom'
+
+# 디렉토리 생성
+os.makedirs(DEFAULT_MODELS_DIR, exist_ok=True)
+os.makedirs(CUSTOM_MODELS_DIR, exist_ok=True)
+
+# PyTorch 모델 캐시 경로 설정 (YOLO, 기타 모델들)
+os.environ['TORCH_HOME'] = str(MODELS_ROOT)
+
+# 파일 업로드 설정
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1GB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 

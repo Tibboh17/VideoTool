@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 import os
 import subprocess
+from django.conf import settings
 
 class VideoDetector:
     """동영상 감지 처리 (YOLO 기본)"""
@@ -20,6 +21,7 @@ class VideoDetector:
         """YOLO 모델 로드"""
         try:
             from ultralytics import YOLO
+            from ultralytics.utils import SETTINGS
             
             model_path = self.model.get_model_path()
             
@@ -27,10 +29,81 @@ class VideoDetector:
                 raise ValueError("모델 파일이 지정되지 않았습니다")
             
             print(f"🔄 YOLO 모델 로딩 중: {model_path}")
-            self.yolo_model = YOLO(model_path)
-            print(f"✅ YOLO 모델 로드 완료")
             
-            # 모델 정보 출력
+            # ⭐ YOLO 기본 모델의 경우
+            if self.model.yolo_version and not self.model.model_path:
+                # 기본 모델 디렉토리
+                default_models_dir = getattr(
+                    settings, 
+                    'DEFAULT_MODELS_DIR', 
+                    settings.MODELS_ROOT / 'default'
+                )
+                os.makedirs(default_models_dir, exist_ok=True)
+                
+                # 모델 파일 경로
+                local_model_path = os.path.join(default_models_dir, self.model.yolo_version)
+                
+                # 이미 로컬에 있는지 확인
+                if os.path.exists(local_model_path):
+                    print(f"   ✅ 로컬 모델 사용: {local_model_path}")
+                    self.yolo_model = YOLO(local_model_path)
+                else:
+                    print(f"   📥 모델 다운로드 중... → {default_models_dir}")
+                    
+                    # ⭐ ultralytics 다운로드 경로 변경
+                    try:
+                        # ultralytics 설정 업데이트
+                        SETTINGS['weights_dir'] = str(default_models_dir)
+                        SETTINGS.save()
+                    except:
+                        pass
+                    
+                    # 임시로 환경변수 설정
+                    old_torch_home = os.environ.get('TORCH_HOME')
+                    os.environ['TORCH_HOME'] = str(settings.MODELS_ROOT)
+                    
+                    try:
+                        # 모델 다운로드 - ultralytics가 자동으로 처리
+                        self.yolo_model = YOLO(self.model.yolo_version)
+                        
+                        # 다운로드된 파일 찾아서 이동
+                        import shutil
+                        from pathlib import Path
+                        
+                        # 가능한 캐시 위치들
+                        possible_locations = [
+                            # 현재 디렉토리
+                            Path.cwd() / self.model.yolo_version,
+                            settings.BASE_DIR / self.model.yolo_version,
+                            # ultralytics 기본 캐시
+                            Path.home() / '.cache' / 'torch' / 'hub' / 'ultralytics' / self.model.yolo_version,
+                            # torch hub
+                            Path.home() / '.cache' / 'torch' / 'hub' / self.model.yolo_version,
+                        ]
+                        
+                        for possible_path in possible_locations:
+                            if possible_path.exists() and possible_path.is_file():
+                                if str(possible_path) != local_model_path:
+                                    print(f"   📦 발견: {possible_path}")
+                                    shutil.move(str(possible_path), local_model_path)
+                                    print(f"   ✅ 이동 완료: {local_model_path}")
+                                break
+                        
+                        # 이동된 모델로 재로드
+                        if os.path.exists(local_model_path):
+                            self.yolo_model = YOLO(local_model_path)
+                        
+                    finally:
+                        # 환경변수 복원
+                        if old_torch_home:
+                            os.environ['TORCH_HOME'] = old_torch_home
+                        elif 'TORCH_HOME' in os.environ:
+                            del os.environ['TORCH_HOME']
+            else:
+                # 사용자가 업로드한 모델
+                self.yolo_model = YOLO(model_path)
+            
+            print(f"✅ YOLO 모델 로드 완료")
             print(f"   클래스: {list(self.yolo_model.names.values())[:5]}... (총 {len(self.yolo_model.names)}개)")
             
         except ImportError:
@@ -39,7 +112,66 @@ class VideoDetector:
             raise
         except Exception as e:
             print(f"❌ YOLO 모델 로드 실패: {e}")
+            import traceback
+            traceback.print_exc()
             raise
+    
+    def detect_frame(self, frame, frame_idx):
+        """단일 프레임 감지"""
+        
+        if self.model_type == 'yolo':
+            return self.detect_yolo(frame)
+        elif self.model_type == 'custom':
+            return self.detect_custom(frame)
+        else:
+            return []
+
+    def detect_yolo(self, frame):
+        """YOLO 객체 감지"""
+        if not self.yolo_model:
+            return []
+        
+        try:
+            # YOLO 추론
+            results = self.yolo_model(frame, verbose=False)
+            
+            detections = []
+            
+            # 결과 파싱
+            for result in results:
+                boxes = result.boxes
+                
+                for box in boxes:
+                    # 바운딩 박스 좌표
+                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    
+                    # 신뢰도
+                    confidence = float(box.conf[0])
+                    
+                    # 클래스
+                    class_id = int(box.cls[0])
+                    label = self.yolo_model.names[class_id]
+                    
+                    # 신뢰도 임계값
+                    conf_threshold = self.model.config.get('conf_threshold', 0.25)
+                    
+                    if confidence >= conf_threshold:
+                        detections.append({
+                            'label': label,
+                            'confidence': confidence,
+                            'bbox': [int(x1), int(y1), int(x2-x1), int(y2-y1)],
+                        })
+            
+            return detections
+            
+        except Exception as e:
+            print(f"⚠️  YOLO 감지 오류: {e}")
+            return []
+    
+    def detect_custom(self, frame):
+        """사용자 정의 모델"""
+        # TODO: 다른 모델 타입 지원
+        return []
     
     def process_video(self, input_path, output_path, progress_callback=None):
         """동영상에 감지 모델 적용"""
@@ -67,7 +199,7 @@ class VideoDetector:
         print(f"FPS: {fps}")
         print(f"총 프레임: {total_frames}")
         
-        # ⭐ 임시 파일로 먼저 저장
+        # 임시 파일로 먼저 저장
         temp_output = str(Path(output_path).parent / f'temp_{Path(output_path).name}')
         print(f"임시 출력: {temp_output}")
         
@@ -133,11 +265,10 @@ class VideoDetector:
             out.release()
             print(f"✅ OpenCV 처리 완료: {frame_count} 프레임")
             
-            # 파일이 완전히 닫힐 때까지 대기
             import time
             time.sleep(1)
         
-        # ⭐ ffmpeg로 재인코딩 (80-100%)
+        # ffmpeg 재인코딩
         if progress_callback:
             progress_callback(frame_count, total_frames, 85)
         
@@ -145,20 +276,17 @@ class VideoDetector:
         ffmpeg_success = self.reencode_with_ffmpeg(temp_output, output_path)
         
         if ffmpeg_success:
-            # 임시 파일 삭제
             try:
                 os.remove(temp_output)
                 print(f"🗑️  임시 파일 삭제 완료")
             except Exception as e:
                 print(f"⚠️  임시 파일 삭제 실패: {e}")
         else:
-            # ffmpeg 실패 시 임시 파일을 최종 파일로 사용
             print(f"\n⚠️  ffmpeg 재인코딩 실패 - OpenCV 출력 사용")
             if os.path.exists(output_path):
                 os.remove(output_path)
             os.rename(temp_output, output_path)
         
-        # 최종 파일 확인
         if not os.path.exists(output_path):
             raise ValueError(f"최종 출력 파일이 없습니다: {output_path}")
         

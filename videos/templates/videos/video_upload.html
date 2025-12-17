@@ -32,22 +32,13 @@
                     <div class="mb-3">
                         <label for="{{ form.file.id_for_label }}" class="form-label">동영상 파일 *</label>
                         {{ form.file }}
-                        <div class="form-text">지원 형식: MP4, AVI, MOV, MKV, WMV (최대 1GB)</div>
+                        <div class="form-text">지원 형식: MP4, AVI, MOV, MKV, WMV (최대 1GB)<br>썸네일은 영상의 첫 번째 프레임으로 자동 생성됩니다.</div>
                         {% if form.file.errors %}
                             <div class="text-danger">{{ form.file.errors }}</div>
                         {% endif %}
                         <div class="progress mt-2" style="display: none;" id="uploadProgress">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.thumbnail.id_for_label }}" class="form-label">썸네일 이미지</label>
-                        {{ form.thumbnail }}
-                        <div class="form-text">선택사항</div>
-                        {% if form.thumbnail.errors %}
-                            <div class="text-danger">{{ form.thumbnail.errors }}</div>
-                        {% endif %}
                     </div>
 
                     <div class="d-grid gap-2">

@@ -1,0 +1,206 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}모델 추가{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-4">
+                <i class="bi bi-plus-circle"></i> 감지 모델 추가
+            </h1>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="modelForm">
+                        {% csrf_token %}
+                        
+                        <!-- 모델 이름 -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                <strong>모델 이름</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="예: YOLOv8 Medium - 차량 감지">
+                        </div>
+
+                        <!-- 모델 타입 -->
+                        <div class="mb-3">
+                            <label for="model_type" class="form-label">
+                                <strong>모델 타입</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="model_type" name="model_type" required onchange="updateModelTypeOptions()">
+                                <option value="">-- 선택하세요 --</option>
+                                <option value="yolo">YOLO (객체 감지)</option>
+                                <option value="custom">Custom Model (사용자 정의)</option>
+                            </select>
+                        </div>
+
+                        <!-- YOLO 버전 선택 (YOLO 타입일 때만) -->
+                        <div id="yoloOptions" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <strong>YOLO 모델 선택</strong>
+                                </label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="yolo_source" id="yolo_pretrained" value="pretrained" checked onchange="updateYoloSource()">
+                                    <label class="form-check-label" for="yolo_pretrained">
+                                        사전 학습된 YOLO 모델 사용
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="yolo_source" id="yolo_custom" value="custom" onchange="updateYoloSource()">
+                                    <label class="form-check-label" for="yolo_custom">
+                                        커스텀 YOLO 모델 업로드 (.pt 파일)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 사전 학습 모델 선택 -->
+                            <div id="yoloVersionSelect" class="mb-3">
+                                <label for="yolo_version" class="form-label">
+                                    <strong>YOLO 버전</strong>
+                                </label>
+                                <select class="form-select" id="yolo_version" name="yolo_version">
+                                    <option value="">-- 선택하세요 --</option>
+                                    {% for version, description in yolo_versions %}
+                                    <option value="{{ version }}">{{ description }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">
+                                    첫 실행 시 자동으로 다운로드됩니다 (시간이 걸릴 수 있음)
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- 모델 파일 업로드 (Custom 타입이거나 YOLO Custom일 때) -->
+                        <div id="fileUpload" style="display: none;">
+                            <div class="mb-3">
+                                <label for="model_file" class="form-label">
+                                    <strong>모델 파일</strong>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control" id="model_file" name="model_file" 
+                                       accept=".pt,.pth,.onnx,.h5">
+                                <small class="form-text text-muted">
+                                    지원 형식: .pt, .pth, .onnx, .h5 (최대 500MB)
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- 신뢰도 임계값 -->
+                        <div class="mb-3">
+                            <label for="conf_threshold" class="form-label">
+                                <strong>신뢰도 임계값 (Confidence Threshold)</strong>
+                            </label>
+                            <input type="number" class="form-control" id="conf_threshold" name="conf_threshold" 
+                                   value="0.25" min="0" max="1" step="0.05">
+                            <small class="form-text text-muted">
+                                이 값보다 높은 신뢰도의 객체만 감지합니다 (0.0 ~ 1.0)
+                            </small>
+                        </div>
+
+                        <!-- 설명 -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <strong>설명</strong>
+                            </label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="모델에 대한 설명을 입력하세요"></textarea>
+                        </div>
+
+                        <!-- 안내 메시지 -->
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> 안내</h6>
+                            <ul class="mb-0">
+                                <li><strong>YOLO 사전 학습 모델:</strong> COCO 데이터셋으로 학습된 80개 클래스 감지</li>
+                                <li><strong>커스텀 모델:</strong> 직접 학습한 YOLO 또는 다른 형식의 모델 업로드</li>
+                                <li>모델 파일이 클 경우 업로드에 시간이 걸릴 수 있습니다</li>
+                            </ul>
+                        </div>
+
+                        <!-- 버튼 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save"></i> 모델 추가
+                            </button>
+                            <a href="{% url 'detection_model_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> 취소
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateModelTypeOptions() {
+    const modelType = document.getElementById('model_type').value;
+    const yoloOptions = document.getElementById('yoloOptions');
+    const fileUpload = document.getElementById('fileUpload');
+    const yoloVersionSelect = document.getElementById('yoloVersionSelect');
+    const modelFileInput = document.getElementById('model_file');
+    const yoloVersionInput = document.getElementById('yolo_version');
+    
+    if (modelType === 'yolo') {
+        yoloOptions.style.display = 'block';
+        updateYoloSource();
+    } else if (modelType === 'custom') {
+        yoloOptions.style.display = 'none';
+        yoloVersionSelect.style.display = 'none';
+        fileUpload.style.display = 'block';
+        modelFileInput.required = true;
+        yoloVersionInput.required = false;
+    } else {
+        yoloOptions.style.display = 'none';
+        fileUpload.style.display = 'none';
+        modelFileInput.required = false;
+        yoloVersionInput.required = false;
+    }
+}
+
+function updateYoloSource() {
+    const yoloSource = document.querySelector('input[name="yolo_source"]:checked').value;
+    const yoloVersionSelect = document.getElementById('yoloVersionSelect');
+    const fileUpload = document.getElementById('fileUpload');
+    const yoloVersionInput = document.getElementById('yolo_version');
+    const modelFileInput = document.getElementById('model_file');
+    
+    if (yoloSource === 'pretrained') {
+        yoloVersionSelect.style.display = 'block';
+        fileUpload.style.display = 'none';
+        yoloVersionInput.required = true;
+        modelFileInput.required = false;
+    } else {
+        yoloVersionSelect.style.display = 'none';
+        fileUpload.style.display = 'block';
+        yoloVersionInput.required = false;
+        modelFileInput.required = true;
+    }
+}
+
+// 폼 제출 시 파일 크기 확인
+document.getElementById('modelForm').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('model_file');
+    if (fileInput.files.length > 0) {
+        const fileSize = fileInput.files[0].size;
+        const maxSize = 500 * 1024 * 1024; // 500MB
+        
+        if (fileSize > maxSize) {
+            e.preventDefault();
+            alert('파일 크기가 너무 큽니다. 500MB 이하의 파일을 업로드해주세요.');
+            return false;
+        }
+        
+        // 업로드 중 표시
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>업로드 중...';
+        submitBtn.disabled = true;
+    }
+});
+</script>
+{% endblock %}

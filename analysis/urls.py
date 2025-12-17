@@ -21,4 +21,9 @@ urlpatterns = [
 
     # 결과 동영상 스트리밍
     path('<int:analysis_id>/stream/', views.serve_analysis_video, name='serve_analysis_video'),
+
+    # 분석 스트림 삭제 
+    path('<int:analysis_id>/delete/', views.analysis_delete, name='analysis_delete'),
+
+
 ]

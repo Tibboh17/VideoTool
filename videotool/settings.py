@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "videos",
     "analysis",
     "dashboard",
-
+    "detection",
 ]
 
 MIDDLEWARE = [

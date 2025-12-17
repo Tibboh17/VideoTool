@@ -123,6 +123,39 @@ def analysis_result(request, analysis_id):
     }
     return render(request, 'analysis/result.html', context)
 
+def analysis_delete(request, analysis_id):
+    """분석 삭제"""
+    analysis = get_object_or_404(Analysis, id=analysis_id)
+    video_id = analysis.video.id
+    
+    if request.method == 'POST':
+        try:
+            for detection in analysis.detections.all():
+                try:
+                    detection.delete_files()
+                except Exception as e:
+                    print(f"감지 파일 삭제 중 오류: {e}")
+                detection.delete()
+            
+            # 분석 파일 삭제
+            analysis.delete_files()
+        except Exception as e:
+            print(f"파일 삭제 중 오류: {e}")
+        
+        analysis.delete()
+        messages.success(request, '분석이 삭제되었습니다.')
+        
+        redirect_to = request.POST.get('redirect', 'analysis_list')
+        
+        if redirect_to == 'video_detail':
+            return redirect('video_detail', pk=video_id)
+        else:
+            return redirect('video_list') 
+    
+    messages.warning(request, '잘못된 접근입니다.')
+    return redirect('video_detail', pk=video_id)
+
+
 def serve_analysis_video(request, analysis_id):
     """
     분석 결과 동영상 스트리밍

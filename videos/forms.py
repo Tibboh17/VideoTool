@@ -4,7 +4,7 @@ from .models import Video
 class VideoUploadForm(forms.ModelForm):
     class Meta:
         model = Video
-        fields = ['title', 'description', 'file', 'thumbnail']
+        fields = ['title', 'description', 'file']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',

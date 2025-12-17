@@ -162,74 +162,108 @@ class VideoPreprocessor:
         ffmpeg_path = shutil.which('ffmpeg')
         
         if not ffmpeg_path:
+            # PATH에서 못 찾으면 일반적인 설치 위치 확인
+            possible_paths = [
+                r'C:\ffmpeg\bin\ffmpeg.exe',
+                r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+            ]
+            for path in possible_paths:
+                if os.path.exists(path):
+                    ffmpeg_path = path
+                    break
+        
+        if not ffmpeg_path:
             print(f"❌ ffmpeg를 찾을 수 없습니다!")
+            print(f"   PATH 확인 또는 C:\\ffmpeg\\bin\\ffmpeg.exe 존재 여부 확인")
             return False
         
         print(f"✅ ffmpeg 경로: {ffmpeg_path}")
         
+        # 입력 파일 확인
+        if not os.path.exists(input_path):
+            print(f"❌ 입력 파일이 없습니다: {input_path}")
+            return False
+        
+        input_size = os.path.getsize(input_path)
+        print(f"📥 입력 파일: {input_size:,} bytes ({input_size/1024/1024:.2f} MB)")
+        
+        if input_size < 1000:
+            print(f"❌ 입력 파일이 너무 작습니다!")
+            return False
+        
         try:
             cmd = [
-                'ffmpeg',
+                ffmpeg_path,
                 '-i', str(input_path),
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-crf', '23',
-                '-movflags', '+faststart',
-                '-pix_fmt', 'yuv420p',
-                '-y',
+                '-c:v', 'libx264',           # H.264 코덱
+                '-preset', 'fast',           # 인코딩 속도 (ultrafast, fast, medium, slow)
+                '-crf', '23',                # 품질 (18-28, 낮을수록 고품질)
+                '-movflags', '+faststart',   # 웹 스트리밍 최적화
+                '-pix_fmt', 'yuv420p',       # 브라우저 호환성
+                '-y',                        # 덮어쓰기
                 str(output_path)
             ]
             
             print(f"\n🎬 ffmpeg 재인코딩 시작...")
-            print(f"   입력: {input_path}")
-            print(f"   입력 존재: {os.path.exists(input_path)}")
-            if os.path.exists(input_path):
-                print(f"   입력 크기: {os.path.getsize(input_path):,} bytes")
-            print(f"   출력: {output_path}")
+            print(f"   명령어: {' '.join(cmd[:3])} ... {cmd[-1]}")
             
+            # ffmpeg 실행
             result = subprocess.run(
                 cmd, 
                 capture_output=True, 
                 text=True,
-                timeout=1800
+                timeout=1800  # 30분 타임아웃
             )
             
             print(f"\n📋 ffmpeg 결과:")
             print(f"   Return code: {result.returncode}")
             
+            # stderr에 진행 상황 및 에러가 출력됨
             if result.stderr:
-                print(f"\n--- stderr 시작 ---")
-                print(result.stderr)
+                # stderr의 마지막 부분만 출력 (너무 길면)
+                stderr_lines = result.stderr.split('\n')
+                if len(stderr_lines) > 20:
+                    print(f"\n--- stderr (마지막 20줄) ---")
+                    print('\n'.join(stderr_lines[-20:]))
+                else:
+                    print(f"\n--- stderr ---")
+                    print(result.stderr)
                 print(f"--- stderr 끝 ---\n")
             
-            if result.stdout:
-                print(f"\n--- stdout 시작 ---")
-                print(result.stdout)
-                print(f"--- stdout 끝 ---\n")
-            
+            # 성공 확인
             if result.returncode == 0:
                 if os.path.exists(output_path):
-                    size = os.path.getsize(output_path)
-                    print(f"✅ 재인코딩 성공: {size:,} bytes ({size/1024/1024:.2f} MB)")
+                    output_size = os.path.getsize(output_path)
+                    print(f"✅ ffmpeg 재인코딩 성공!")
+                    print(f"📤 출력 파일: {output_size:,} bytes ({output_size/1024/1024:.2f} MB)")
                     
-                    if size < 1000:
-                        print(f"⚠️  출력 파일이 너무 작습니다!")
+                    if output_size < 1000:
+                        print(f"⚠️  경고: 출력 파일이 너무 작습니다!")
                         return False
                     
                     return True
                 else:
-                    print(f"❌ 출력 파일이 생성되지 않았습니다!")
+                    print(f"❌ ffmpeg는 성공했으나 출력 파일이 없습니다: {output_path}")
                     return False
             else:
                 print(f"❌ ffmpeg 실패 (return code: {result.returncode})")
+                
+                # 일반적인 에러 메시지 확인
+                if 'Unrecognized option' in result.stderr:
+                    print(f"⚠️  옵션 인식 실패 - ffmpeg GPL 버전인지 확인하세요")
+                elif 'libx264' in result.stderr and 'not found' in result.stderr:
+                    print(f"⚠️  libx264 코덱을 찾을 수 없습니다 - GPL 버전 필요")
+                elif 'moov atom not found' in result.stderr:
+                    print(f"⚠️  입력 파일이 손상되었거나 완전히 생성되지 않았습니다")
+                
                 return False
                 
-        except FileNotFoundError as e:
-            print(f"❌ ffmpeg 실행 실패: {e}")
-            return False
-            
         except subprocess.TimeoutExpired:
             print(f"❌ ffmpeg 타임아웃 (30분 초과)")
+            return False
+            
+        except FileNotFoundError as e:
+            print(f"❌ ffmpeg 실행 실패: {e}")
             return False
             
         except Exception as e:
@@ -237,11 +271,10 @@ class VideoPreprocessor:
             import traceback
             traceback.print_exc()
             return False
-    
+        
     def process_video(self, video_path, pipeline, output_path, progress_callback=None):
-        """
-        동영상에 전처리 파이프라인 적용
-        """
+        """동영상에 전처리 파이프라인 적용"""
+        
         print(f"\n{'='*60}")
         print(f"📹 동영상 처리 시작")
         print(f"{'='*60}")
@@ -296,7 +329,6 @@ class VideoPreprocessor:
                 
                 # 프레임 저장
                 out.write(processed_frame)
-                
                 frame_count += 1
                 
                 # 진행률 콜백 (0-80%)
@@ -310,50 +342,54 @@ class VideoPreprocessor:
                     print(f"   진행: {frame_count}/{total_frames} ({percent:.1f}%)")
         
         finally:
+            print(f"\n🔒 리소스 해제 중...")
             cap.release()
             out.release()
+            
+            # 파일이 완전히 닫힐 때까지 대기
+            import time
+            time.sleep(1)
+            
             print(f"✅ OpenCV 처리 완료: {frame_count} 프레임")
         
-        # 임시 파일 크기 확인
+        # 임시 파일 확인
+        if not os.path.exists(temp_output):
+            raise ValueError(f"임시 파일이 생성되지 않았습니다: {temp_output}")
+        
         temp_size = os.path.getsize(temp_output)
         print(f"📦 임시 파일 크기: {temp_size:,} bytes ({temp_size/1024/1024:.2f} MB)")
         
         if temp_size < 1000:
-            raise ValueError(f"OpenCV 출력 파일이 너무 작습니다: {temp_size} bytes")
+            raise ValueError(f"임시 파일이 너무 작습니다: {temp_size} bytes")
         
         # ffmpeg 재인코딩 (80-100%)
         if progress_callback:
             progress_callback(frame_count, total_frames, 85)
         
-        print(f"\n🎬 ffmpeg 재인코딩...")
+        print(f"\n🎬 ffmpeg 재인코딩 시도...")
         success = self.reencode_with_ffmpeg(temp_output, output_path)
         
         if success:
             # 임시 파일 삭제
             try:
                 os.remove(temp_output)
-                print(f"✅ 임시 파일 삭제: {temp_output}")
+                print(f"🗑️  임시 파일 삭제 완료")
             except Exception as e:
                 print(f"⚠️  임시 파일 삭제 실패: {e}")
-            
-            final_path = output_path
-            
         else:
-            # ffmpeg 실패 시
-            print(f"❌ ffmpeg 재인코딩 실패!")
-            print(f"⚠️  브라우저에서 재생이 안 될 수 있습니다!")
+            # ffmpeg 실패 시 임시 파일을 최종 파일로 사용
+            print(f"\n⚠️  ffmpeg 재인코딩 실패 - OpenCV 출력 사용")
+            print(f"   브라우저에서 재생이 안 될 수 있습니다")
             
-            # OpenCV 출력 파일 사용
             if os.path.exists(output_path):
                 os.remove(output_path)
             os.rename(temp_output, output_path)
-            final_path = output_path
         
         # 최종 파일 확인
-        if not os.path.exists(final_path):
-            raise ValueError(f"최종 출력 파일이 없습니다: {final_path}")
+        if not os.path.exists(output_path):
+            raise ValueError(f"최종 출력 파일이 없습니다: {output_path}")
         
-        final_size = os.path.getsize(final_path)
+        final_size = os.path.getsize(output_path)
         print(f"\n📦 최종 파일 크기: {final_size:,} bytes ({final_size/1024/1024:.2f} MB)")
         
         if final_size < 1000:
@@ -362,7 +398,7 @@ class VideoPreprocessor:
         if progress_callback:
             progress_callback(frame_count, total_frames, 100)
         
-        print(f"{'='*60}")
+        print(f"\n{'='*60}")
         print(f"✨ 처리 완료!")
         print(f"{'='*60}\n")
         

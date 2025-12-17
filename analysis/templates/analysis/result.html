@@ -39,10 +39,22 @@
             <div class="card-body">
                 <video width="100%" controls preload="metadata">
                     <source src="{% url 'serve_analysis_video' analysis.id %}" type="video/mp4">
+                    브라우저가 동영상 재생을 지원하지 않습니다.
                 </video>
-                <div class="mt-2">
-                    <p class="text-muted mb-1">전처리 완료</p>
-                    <small>프레임: {{ analysis.processed_frames }}</small>
+                
+                <!-- 정보와 다운로드 버튼 좌우 배치 -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <p class="text-muted mb-1">전처리 완료</p>
+                        <small>프레임: {{ analysis.processed_frames }}</small>
+                    </div>
+                    <div>
+                        <a href="{% url 'serve_analysis_video' analysis.id %}" 
+                        download="processed_{{ video.file.name }}" 
+                        class="btn btn-success">
+                            <i class="bi bi-download"></i> 다운로드
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -77,17 +89,27 @@
 </div>
 
 <!-- 액션 버튼 -->
-<div class="row">
-    <div class="col-md-12">
+<div class="card mb-4">
+    <div class="card-body">
         <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-
-            <a href="{% url 'serve_analysis_video' analysis.id %}" download class="btn btn-primary">
-                <i class="bi bi-download"></i> 처리된 동영상 다운로드
+            <!-- 모델 적용 -->
+            {% if analysis.status == 'completed' %}
+            <a href="{% url 'start_detection' analysis.id %}" class="btn btn-primary">
+                <i class="bi bi-cpu"></i> 모델 적용
             </a>
+            {% else %}
+            <button class="btn btn-secondary" disabled title="분석이 완료되어야 합니다">
+                <i class="bi bi-cpu"></i> 모델 적용
+            </button>
+            {% endif %}
+            
+            <!-- 다시 전처리 -->
             <a href="{% url 'start_analysis' video.id %}" class="btn btn-warning">
                 <i class="bi bi-arrow-counterclockwise"></i> 다시 전처리하기
             </a>
-            <a href="{% url 'video_detail' video.id %}" class="btn btn-secondary">
+            
+            <!-- 돌아가기 -->
+            <a href="{% url 'video_detail' video.id %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> 동영상으로 돌아가기
             </a>
         </div>

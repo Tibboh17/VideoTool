@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
+from django.utils import timezone
 from videos.models import Video
 from .models import Analysis
 from .preprocessing import VideoPreprocessor
@@ -16,6 +17,29 @@ def start_analysis(request, video_id):
     """분석 시작 - 전처리 선택 페이지"""
     video = get_object_or_404(Video, pk=video_id)
     
+    # ⭐ POST 요청 처리 (전처리 생략)
+    if request.method == 'POST':
+        skip_preprocessing = request.POST.get('skip_preprocessing') == 'true'
+        
+        if skip_preprocessing:
+            # 전처리 생략 - 원본 동영상 사용
+            analysis = Analysis.objects.create(
+                video=video,
+                preprocessing_pipeline=[],  # 빈 파이프라인
+                status='completed'
+            )
+            
+            # 원본 동영상 경로를 output_video_path에 설정
+            analysis.output_video_path = video.file.name
+            analysis.total_frames = 0
+            analysis.processed_frames = 0
+            analysis.completed_at = timezone.now()
+            analysis.save()
+            
+            messages.success(request, '전처리를 생략했습니다. 이제 모델을 적용할 수 있습니다.')
+            return redirect('analysis_result', analysis_id=analysis.id)
+    
+    # GET 요청 - 기존 로직
     # 새 분석 생성 또는 기존 분석 가져오기
     analysis = Analysis.objects.filter(video=video, status='ready').first()
     if not analysis:

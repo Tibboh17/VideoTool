@@ -1,6 +1,6 @@
 from django.db import models
 from videos.models import Video
-import json
+import json, os
 
 class Analysis(models.Model):
     STATUS_CHOICES = [
@@ -10,7 +10,12 @@ class Analysis(models.Model):
         ('failed', '실패'),
     ]
     
-    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='analyses')
+    video = models.ForeignKey(
+        Video, 
+        on_delete=models.CASCADE, 
+        related_name='analyses',
+        verbose_name='동영상'
+        )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ready')
     
     # 전처리 파이프라인 (JSON으로 저장)
@@ -63,3 +68,34 @@ class Analysis(models.Model):
         """파이프라인을 읽기 쉽게 표시"""
         pipeline = self.preprocessing_pipeline or []
         return [step['type'] for step in pipeline]
+    
+    def delete_files(self):
+        """관련 파일 삭제"""
+        
+        from django.conf import settings
+        import shutil
+        
+        deleted_files = []
+        
+        # 출력 동영상 삭제
+        if self.output_video_path:
+            try:
+                path = os.path.join(settings.BASE_DIR, 'media', self.output_video_path)
+                if os.path.exists(path):
+                    os.remove(path)
+                    deleted_files.append(path)
+                    print(f"✅ 파일 삭제: {path}")
+            except Exception as e:
+                print(f"⚠️  파일 삭제 실패: {e}")
+        
+        # 결과 폴더 전체 삭제
+        result_dir = os.path.join(settings.BASE_DIR, 'media', 'analysis_results', str(self.id))
+        if os.path.exists(result_dir):
+            try:
+                shutil.rmtree(result_dir)
+                deleted_files.append(result_dir)
+                print(f"✅ 폴더 삭제: {result_dir}")
+            except Exception as e:
+                print(f"⚠️  폴더 삭제 실패: {e}")
+        
+        return deleted_files

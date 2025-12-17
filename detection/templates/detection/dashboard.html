@@ -1,0 +1,202 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}감지 대시보드{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">
+        <i class="bi bi-speedometer2"></i> 감지 대시보드
+    </h1>
+
+    <!-- 전체 통계 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_detections }}</h3>
+                    <p class="mb-0 text-muted">전체 감지 작업</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ completed_detections }}</h3>
+                    <p class="mb-0 text-muted">완료</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ processing_detections }}</h3>
+                    <p class="mb-0 text-muted">처리 중</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ failed_detections }}</h3>
+                    <p class="mb-0 text-muted">실패</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모델별 통계 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-cpu"></i> 모델별 통계
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if model_stats %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>모델</th>
+                            <th>타입</th>
+                            <th>전체 작업</th>
+                            <th>완료</th>
+                            <th>성공률</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model in model_stats %}
+                        <tr>
+                            <td><strong>{{ model.name }}</strong></td>
+                            <td>
+                                {% if model.model_type == 'yolo' %}
+                                    <span class="badge bg-primary">
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                {% endif %}
+                                    {{ model.get_model_type_display }}
+                            </td>
+                            <td>{{ model.total }}</td>
+                            <td><strong class="text-success">{{ model.completed }}</strong></td>
+                            <td>
+                                {% if model.total > 0 %}
+                                    {% widthratio model.completed model.total 100 %}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'detection_model_detail' model.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-info-circle"></i> 상세
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                등록된 모델이 없습니다.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 최근 감지 작업 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history"></i> 최근 감지 작업
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if recent_detections %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="80">ID</th>
+                            <th>동영상</th>
+                            <th>모델</th>
+                            <th width="100">상태</th>
+                            <th width="100">감지 수</th>
+                            <th width="120">생성일</th>
+                            <th width="150">작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detection in recent_detections %}
+                        <tr>
+                            <td><strong>#{{ detection.id }}</strong></td>
+                            <td>
+                                <a href="{% url 'video_detail' detection.analysis.video.id %}">
+                                    {{ detection.analysis.video.title|truncatewords:5 }}
+                                </a>
+                            </td>
+                            <td>
+                                <small>{{ detection.model.name|truncatewords:3 }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ detection.get_status_display_badge }}">
+                                    {{ detection.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if detection.total_detections %}
+                                    <span class="badge bg-info">{{ detection.total_detections }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ detection.created_at|date:"m/d H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    {% if detection.status == 'completed' %}
+                                        <a href="{% url 'detection_result' detection.id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i> 결과
+                                        </a>
+                                    {% elif detection.status == 'processing' %}
+                                        <a href="{% url 'detection_progress' detection.id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-hourglass-split"></i> 진행
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle"></i>
+                아직 감지 작업이 없습니다.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 네비게이션 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <a href="{% url 'detection_model_list' %}" class="btn btn-primary">
+                    <i class="bi bi-cpu"></i> 모델 관리
+                </a>
+                <a href="{% url 'detection_model_add' %}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> 모델 추가
+                </a>
+                <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-film"></i> 동영상 목록
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

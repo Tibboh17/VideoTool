@@ -19,17 +19,47 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'video_list' %}">동영상 분석</a>
+            <a class="navbar-brand" href="{% url 'video_list' %}">
+                <i class="bi bi-film"></i> 동영상 분석 시스템
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <!-- 홈 -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'video_list' %}">동영상 목록</a>
+                        <a class="nav-link" href="{% url 'video_list' %}">
+                            <i class="bi bi-house"></i> 홈
+                        </a>
                     </li>
+
+                    <!-- 업로드 -->
+                    <!-- <li class="nav-item">
+                        <a class="nav-link" href="{% url 'video_upload' %}">
+                            <i class="bi bi-upload"></i> 동영상 업로드
+                        </a>
+                    </li> -->
+
+                    <!-- 동영상 -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'video_upload' %}">업로드</a>
+                        <a class="nav-link" href="{% url 'video_list' %}">
+                            <i class="bi bi-film"></i> 동영상 목록
+                        </a>
+                    </li>
+                    
+                    <!-- 감지 대시보드 -->
+                    <!-- <li class="nav-item">
+                        <a class="nav-link" href="{% url 'detection_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> 대시보드
+                        </a>
+                    </li> -->
+                    
+                    <!-- 모델 관리 -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'detection_model_list' %}">
+                            <i class="bi bi-cpu"></i> 모델 관리
+                        </a>
                     </li>
                 </ul>
             </div>

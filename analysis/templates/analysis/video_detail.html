@@ -8,3 +8,81 @@
         <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">목록으로</a>
     </div>
 </div>
+
+
+<!-- 기존 분석 이력 카드 아래에 추가 -->
+
+{% if video.analysis_set.all %}
+    {% for analysis in video.analysis_set.all %}
+        {% if analysis.detections.all %}
+        <!-- 감지 이력 (서브 형태) -->
+        <div class="card mb-3 ms-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="bi bi-arrow-return-right"></i>
+                    감지 이력 (분석 #{{ analysis.id }})
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="80">ID</th>
+                                <th>모델</th>
+                                <th width="100">상태</th>
+                                <th width="100">감지 수</th>
+                                <th width="120">생성일</th>
+                                <th width="150">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detection in analysis.detections.all %}
+                            <tr>
+                                <td><strong>#{{ detection.id }}</strong></td>
+                                <td><small>{{ detection.model.name }}</small></td>
+                                <td>
+                                    <span class="badge bg-{{ detection.get_status_display_badge }}">
+                                        {{ detection.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if detection.total_detections %}
+                                        <span class="badge bg-info">{{ detection.total_detections }}</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ detection.created_at|date:"m/d H:i" }}</small></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if detection.status == 'completed' %}
+                                        <a href="{% url 'detection_result' detection.id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i> 결과
+                                        </a>
+                                        {% elif detection.status == 'processing' %}
+                                        <a href="{% url 'detection_progress' detection.id %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-hourglass-split"></i> 진행
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm"
+                                                data-detection-id="{{ detection.id }}"
+                                                onclick="deleteDetection(this)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}

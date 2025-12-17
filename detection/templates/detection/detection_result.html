@@ -1,0 +1,199 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}감지 결과{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">감지 결과</h1>
+
+    <!-- 감지 정보 카드 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ detection.title|default:"감지 작업" }} #{{ detection.id }}</h5>
+            <p class="card-text">
+                <strong>상태:</strong> 
+                <span class="badge bg-{{ detection.get_status_display_badge }}">
+                    {{ detection.get_status_display }}
+                </span>
+            </p>
+            <p class="card-text">
+                <strong>동영상:</strong> {{ video.title }}<br>
+                <strong>모델:</strong> {{ detection.model.name }} ({{ detection.model.get_model_type_display }})<br>
+                <strong>생성 시간:</strong> {{ detection.created_at|date:"Y-m-d H:i" }}<br>
+                {% if detection.completed_at %}
+                <strong>완료 시간:</strong> {{ detection.completed_at|date:"Y-m-d H:i" }}<br>
+                {% endif %}
+                <strong>처리된 프레임:</strong> {{ detection.processed_frames }} / {{ detection.total_frames }}
+            </p>
+            
+            {% if detection.description %}
+            <p class="card-text">
+                <strong>설명:</strong> {{ detection.description }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 감지 통계 카드 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-bar-chart"></i> 감지 통계
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h2 class="text-primary">{{ detection.total_detections }}</h2>
+                            <p class="mb-0">총 감지 수</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h2 class="text-success">{{ detection.detection_summary|length }}</h2>
+                            <p class="mb-0">감지된 클래스</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h2 class="text-info">{{ detection.processed_frames }}</h2>
+                            <p class="mb-0">처리된 프레임</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if detection.detection_summary %}
+            <hr class="my-4">
+            <h6><i class="bi bi-pie-chart"></i> 클래스별 감지 수</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>클래스</th>
+                            <th>감지 수</th>
+                            <th>비율</th>
+                            <th width="40%">그래프</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for label, count in detection.detection_summary.items %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ label }}</span></td>
+                            <td><strong>{{ count }}</strong></td>
+                            <td>
+                                {% widthratio count detection.total_detections 100 %}%
+                            </td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {% widthratio count detection.total_detections 100 %}%">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 동영상 비교 -->
+    <div class="row">
+        <!-- 전처리된 동영상 (입력) -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h4>입력 동영상 (전처리됨)</h4>
+                </div>
+                <div class="card-body">
+                    <video width="100%" controls preload="metadata">
+                        <source src="{% url 'serve_analysis_video' analysis.id %}" type="video/mp4">
+                        브라우저가 동영상 재생을 지원하지 않습니다.
+                    </video>
+                    <div class="mt-2">
+                        <p class="text-muted mb-1">전처리된 동영상</p>
+                        <small>프레임: {{ analysis.processed_frames }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 감지 결과 동영상 (출력) -->
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h4>감지 결과 동영상</h4>
+                </div>
+                <div class="card-body">
+                    {% if detection.output_video_path %}
+                    <video width="100%" controls preload="metadata">
+                        <source src="{% url 'serve_detection_video' detection.id %}" type="video/mp4">
+                        브라우저가 동영상 재생을 지원하지 않습니다.
+                    </video>
+                    
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <!-- 왼쪽: 정보 -->
+                            <div>
+                                <p class="text-muted mb-0">감지 완료</p>
+                                <small class="text-muted">총 감지: {{ detection.total_detections }}</small>
+                            </div>
+                            
+                            <!-- 오른쪽: 다운로드 버튼 -->
+                            <div>
+                                <a href="{% url 'serve_detection_video' detection.id %}" 
+                                   download="detected_{{ video.file.name }}" 
+                                   class="btn btn-success">
+                                    <i class="bi bi-download"></i> 다운로드
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        결과 동영상이 생성되지 않았습니다.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <!-- 분석 결과로 -->
+                <a href="{% url 'analysis_result' analysis.id %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left"></i> 분석 결과로 돌아가기
+                </a>
+                
+                <!-- 새 감지 작업 -->
+                <a href="{% url 'start_detection' analysis.id %}" class="btn btn-warning">
+                    <i class="bi bi-arrow-counterclockwise"></i> 다른 모델로 다시 감지
+                </a>
+                
+                <!-- 대시보드 -->
+                <a href="{% url 'detection_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-speedometer2"></i> 대시보드
+                </a>
+                
+                <!-- 동영상으로 -->
+                <a href="{% url 'video_detail' video.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-film"></i> 동영상으로
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

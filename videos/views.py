@@ -2,26 +2,43 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import StreamingHttpResponse, HttpResponse, Http404
+from django.core.files.base import ContentFile
 from .models import Video 
 from .forms import VideoUploadForm
 import os
 import re
 import mimetypes
+import ffmpeg
+from io import BytesIO
+from PIL import Image
 
-
-def video_list(request):
-    """동영상 목록"""
-    videos = Video.objects.all()
+def generate_thumbnail(video_path):
+    """영상의 첫 번째 프레임을 썸네일로 생성"""
+    try:
+        # ffmpeg로 첫 번째 프레임 추출
+        out, _ = (
+            ffmpeg
+            .input(video_path, ss=0)  # 0초 위치에서
+            .output('pipe:', vframes=1, format='image2', vcodec='mjpeg')
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+        
+        # 이미지를 PIL로 열고 리사이즈
+        image = Image.open(BytesIO(out))
+        
+        # 썸네일 크기 조정 (예: 640x360)
+        image.thumbnail((640, 360), Image.Resampling.LANCZOS)
+        
+        # BytesIO에 저장
+        thumb_io = BytesIO()
+        image.save(thumb_io, format='JPEG', quality=85)
+        thumb_io.seek(0)
+        
+        return ContentFile(thumb_io.read())
     
-    # 페이지네이션
-    paginator = Paginator(videos, 12)  # 페이지당 12개
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'videos': page_obj,
-    }
-    return render(request, 'videos/video_list.html', context)
+    except Exception as e:
+        print(f"썸네일 생성 오류: {e}")
+        return None
 
 
 def video_upload(request):
@@ -34,6 +51,18 @@ def video_upload(request):
             # 파일 크기 저장
             if video.file:
                 video.file_size = video.file.size
+            
+            # 임시 저장 (파일 경로를 얻기 위해)
+            video.save()
+            
+            # 썸네일 자동 생성
+            if video.file:
+                thumbnail_content = generate_thumbnail(video.file.path)
+                if thumbnail_content:
+                    # 원본 파일명 기반으로 썸네일 파일명 생성
+                    original_name = os.path.splitext(os.path.basename(video.file.name))[0]
+                    thumbnail_name = f"{original_name}_thumb.jpg"
+                    video.thumbnail.save(thumbnail_name, thumbnail_content, save=False)
             
             video.save()
             messages.success(request, '동영상이 성공적으로 업로드되었습니다!')
@@ -48,10 +77,45 @@ def video_upload(request):
     }
     return render(request, 'videos/video_upload.html', context)
 
+def video_list(request):
+    """동영상 목록"""
+    videos = Video.objects.all().order_by('-uploaded_at')
+    
+    # 검색
+    search = request.GET.get('search', '')
+    if search:
+        videos = videos.filter(title__icontains=search)
+    
+    context = {
+        'videos': videos,
+        'search': search,
+    }
+    return render(request, 'videos/video_list.html', context)
 
 def video_detail(request, pk):
-    """동영상 상세보기"""
+    """동영상 상세"""
     video = get_object_or_404(Video, pk=pk)
+    
+    from analysis.models import Analysis
+    analyses_count = Analysis.objects.filter(video=video).count()
+    print(f"\n{'='*60}")
+    print(f"🎬 동영상 상세 페이지")
+    print(f"{'='*60}")
+    print(f"동영상 ID: {video.id}")
+    print(f"동영상 제목: {video.title}")
+    print(f"분석 개수 (직접 쿼리): {analyses_count}")
+    print(f"분석 개수 (video.analyses): {video.analyses.count()}")
+    
+    # 분석 목록 출력
+    for analysis in video.analyses.all():
+        print(f"  - 분석 #{analysis.id}: {analysis.status}, 생성={analysis.created_at}")
+    print(f"{'='*60}\n")
+    
+    analyses = video.analyses.prefetch_related(
+        'detections', 
+        'detections__model'
+    ).order_by('-created_at')
+    
     context = {
         'video': video,
     }
@@ -128,10 +192,11 @@ def serve_video(request, pk):
     
     # 일반 요청 (Range 없음)
     else:
-        response = StreamingHttpResponse(
-            FileWrapper(open(video_path, 'rb'), 8192),
-            content_type='video/mp4'
-        )
+        with open(video_path, 'rb') as f:
+            response = HttpResponse(
+                f.read(),
+                content_type='video/mp4'
+            )
         response['Content-Length'] = str(file_size)
         response['Accept-Ranges'] = 'bytes'
         

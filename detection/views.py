@@ -256,14 +256,20 @@ def detection_status(request, detection_id):
 def detection_result(request, detection_id):
     """감지 결과 페이지"""
     detection = get_object_or_404(Detection, id=detection_id)
+    analysis = detection.analysis
+    
+    # 미디어 정보 가져오기
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
     
     # 결과 파싱
     results = detection.get_results()
     
     context = {
         'detection': detection,
-        'analysis': detection.analysis,
-        'video': detection.analysis.video,
+        'analysis': analysis,
+        'media': media,           
+        'media_type': media_type,
         'results': results,
     }
     return render(request, 'detection/detection_result.html', context)
@@ -353,29 +359,40 @@ def serve_detection_video(request, detection_id):
 def detection_delete(request, detection_id):
     """감지 작업 삭제"""
     detection = get_object_or_404(Detection, id=detection_id)
-    analysis_id = detection.analysis.id
-    video_id = detection.analysis.video.id
-    model_id = detection.model.id  # ⭐ 추가
+    analysis = detection.analysis
+    model_id = detection.model.id
+    
+    # ⭐ 미디어 정보
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
     
     if request.method == 'POST':
-        try:
-            detection.delete_files()
-        except Exception as e:
-            print(f"파일 삭제 중 오류: {e}")
+        # 파일 삭제
+        detection.delete_files()
         
+        # 감지 작업 삭제
         detection.delete()
+        
         messages.success(request, '감지 작업이 삭제되었습니다.')
         
+        # ⭐ 리다이렉트 처리
         redirect_to = request.POST.get('redirect', 'detection_dashboard')
         
-        if redirect_to == 'analysis_result':
-            return redirect('analysis_result', analysis_id=analysis_id)
-        elif redirect_to == 'video_detail':
-            return redirect('video_detail', pk=video_id)
-        elif redirect_to == 'model_detail': 
+        if redirect_to == 'video_detail':
+            return redirect('video_detail', pk=media.id)
+        elif redirect_to == 'image_detail':
+            return redirect('image_detail', pk=media.id)
+        elif redirect_to == 'analysis_result':
+            return redirect('analysis_result', analysis_id=analysis.id)
+        elif redirect_to == 'model_detail':
             return redirect('detection_model_detail', model_id=model_id)
         else:
             return redirect('detection_dashboard')
     
-    messages.warning(request, '잘못된 접근입니다.')
-    return redirect('detection_dashboard')
+    context = {
+        'detection': detection,
+        'analysis': analysis,
+        'media': media,
+        'media_type': media_type,
+    }
+    return render(request, 'detection/detection_delete.html', context)

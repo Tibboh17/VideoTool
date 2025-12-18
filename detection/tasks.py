@@ -3,6 +3,13 @@ from .models import Detection
 import os
 from pathlib import Path
 
+def get_original_filename(self):
+    if hasattr(self, 'video') and self.video:
+        return os.path.basename(self.video.file.name)
+    if hasattr(self, 'image') and self.image:
+        return os.path.basename(self.image.file.name)
+    return "unknown_file"
+
 def process_detection(detection_id):
     """감지 작업 실행 (백그라운드)"""
     detection = None
@@ -39,7 +46,15 @@ def process_detection(detection_id):
         output_dir = Path('media/detection_results') / str(detection.id)
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        output_filename = f'detected_{analysis.video.file.name.split("/")[-1]}'
+        media_obj = getattr(analysis, 'video', None) or getattr(analysis, 'image', None)
+        
+        if media_obj and hasattr(media_obj, 'file') and media_obj.file:
+            original_filename = os.path.basename(media_obj.file.name)
+        else:
+            original_filename = "unknown_file"
+            
+        output_filename = f'detected_{original_filename}'
+        
         output_video_path = output_dir / output_filename
         
         print(f"📤 출력: {output_video_path}")

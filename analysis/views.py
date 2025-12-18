@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.contrib import messages
 from django.utils import timezone
 from videos.models import Video
@@ -15,41 +15,66 @@ from django.http import StreamingHttpResponse, HttpResponse, Http404
 
 def start_analysis(request, video_id):
     """분석 시작 - 전처리 선택 페이지"""
-    video = get_object_or_404(Video, pk=video_id)
+    # ⭐ type 파라미터로 video/image 구분
+    media_type = request.GET.get('type', 'video')
     
-    # ⭐ POST 요청 처리 (전처리 생략)
+    if media_type == 'image':
+        from videos.models import Image
+        media = get_object_or_404(Image, pk=video_id)
+    else:
+        media = get_object_or_404(Video, pk=video_id)
+    
+    # POST 요청 처리 (전처리 생략)
     if request.method == 'POST':
         skip_preprocessing = request.POST.get('skip_preprocessing') == 'true'
         
         if skip_preprocessing:
-            # 전처리 생략 - 원본 동영상 사용
-            analysis = Analysis.objects.create(
-                video=video,
-                preprocessing_pipeline=[],  # 빈 파이프라인
-                status='completed'
-            )
+            # 전처리 생략
+            if media_type == 'image':
+                analysis = Analysis.objects.create(
+                    image=media,
+                    preprocessing_pipeline=[],
+                    status='completed'
+                )
+                analysis.output_video_path = media.file.name
+            else:
+                analysis = Analysis.objects.create(
+                    video=media,
+                    preprocessing_pipeline=[],
+                    status='completed'
+                )
+                analysis.output_video_path = media.file.name
             
-            # 원본 동영상 경로를 output_video_path에 설정
-            analysis.output_video_path = video.file.name
             analysis.total_frames = 0
             analysis.processed_frames = 0
             analysis.completed_at = timezone.now()
             analysis.save()
             
             messages.success(request, '전처리를 생략했습니다. 이제 모델을 적용할 수 있습니다.')
-            return redirect('analysis_result', analysis_id=analysis.id)
+            
+            if media_type == 'image':
+                return redirect('image_detail', pk=media.pk)
+            else:
+                return redirect('analysis_result', analysis_id=analysis.id)
     
     # GET 요청 - 기존 로직
-    # 새 분석 생성 또는 기존 분석 가져오기
-    analysis = Analysis.objects.filter(video=video, status='ready').first()
-    if not analysis:
-        analysis = Analysis.objects.create(video=video, status='ready')
+    if media_type == 'image':
+        analysis = Analysis.objects.filter(image=media, status='ready').first()
+    else:
+        analysis = Analysis.objects.filter(video=media, status='ready').first()
     
-    # 사용 가능한 전처리 방법들
+    if not analysis:
+        if media_type == 'image':
+            analysis = Analysis.objects.create(image=media, status='ready')
+        else:
+            analysis = Analysis.objects.create(video=media, status='ready')
+    
     preprocessing_methods = VideoPreprocessor.PREPROCESSING_METHODS
     
     context = {
-        'video': video,
+        'video': media,  # 템플릿 호환성
+        'media': media,
+        'media_type': media_type,
         'analysis': analysis,
         'preprocessing_methods': preprocessing_methods,
         'current_pipeline': analysis.get_pipeline_display(),
@@ -97,25 +122,43 @@ def execute_analysis(request, analysis_id):
     """분석 실행"""
     analysis = get_object_or_404(Analysis, id=analysis_id)
     
+    # 미디어 정보
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
+    
+    if not media:
+        messages.error(request, '미디어를 찾을 수 없습니다.')
+        return redirect('media_list')
+    
     if analysis.status == 'processing':
         messages.warning(request, '이미 처리 중입니다.')
-        return redirect('analysis_progress', analysis_id=analysis.id)
+        return redirect('analysis_progress', analysis_id=analysis_id)
     
-    # 분석 실행 (백그라운드)
-    import threading
-    thread = threading.Thread(target=process_video_analysis, args=(analysis.id,))
-    thread.start()
+    # 백그라운드 작업 시작
+    from .tasks import start_analysis_task
+    start_analysis_task(analysis_id)
     
-    return redirect('analysis_progress', analysis_id=analysis.id)
+    messages.success(request, '분석이 시작되었습니다.')
+    return redirect('analysis_progress', analysis_id=analysis_id)
 
 
 def analysis_progress(request, analysis_id):
-    """분석 진행 상황 페이지"""
+    """분석 진행 상황"""
     analysis = get_object_or_404(Analysis, id=analysis_id)
+    
+    # 미디어 정보 가져오기
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
+    
+    # 미디어가 없으면 에러
+    if not media:
+        messages.error(request, '미디어를 찾을 수 없습니다.')
+        return redirect('media_list')
     
     context = {
         'analysis': analysis,
-        'video': analysis.video,
+        'media': media,
+        'media_type': media_type,
     }
     return render(request, 'analysis/progress.html', context)
 
@@ -138,46 +181,58 @@ def analysis_result(request, analysis_id):
     """분석 결과 페이지"""
     analysis = get_object_or_404(Analysis, id=analysis_id)
     
-    if analysis.status != 'completed':
-        return redirect('analysis_progress', analysis_id=analysis.id)
+    # 미디어 정보 가져오기
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
+    
+    # 미디어가 없으면 에러
+    if not media:
+        messages.error(request, '미디어를 찾을 수 없습니다.')
+        return redirect('media_list')
     
     context = {
         'analysis': analysis,
-        'video': analysis.video,
+        'media': media,
+        'media_type': media_type,
     }
     return render(request, 'analysis/result.html', context)
+
+
 
 def analysis_delete(request, analysis_id):
     """분석 삭제"""
     analysis = get_object_or_404(Analysis, id=analysis_id)
-    video_id = analysis.video.id
+    
+    # video 또는 image 확인
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
     
     if request.method == 'POST':
-        try:
-            for detection in analysis.detections.all():
-                try:
-                    detection.delete_files()
-                except Exception as e:
-                    print(f"감지 파일 삭제 중 오류: {e}")
-                detection.delete()
-            
-            # 분석 파일 삭제
-            analysis.delete_files()
-        except Exception as e:
-            print(f"파일 삭제 중 오류: {e}")
+        # 파일 삭제
+        analysis.delete_files()
         
+        # 분석 삭제
         analysis.delete()
+        
         messages.success(request, '분석이 삭제되었습니다.')
         
-        redirect_to = request.POST.get('redirect', 'analysis_list')
+        # 리다이렉트 처리
+        redirect_to = request.POST.get('redirect', 'analysis_result')
         
         if redirect_to == 'video_detail':
-            return redirect('video_detail', pk=video_id)
+            return redirect('video_detail', pk=media.id)
+        elif redirect_to == 'image_detail':
+            return redirect('image_detail', pk=media.id)
         else:
-            return redirect('video_list') 
+            # 기본: 미디어 목록으로
+            return redirect('media_list')
     
-    messages.warning(request, '잘못된 접근입니다.')
-    return redirect('video_detail', pk=video_id)
+    context = {
+        'analysis': analysis,
+        'media': media,
+        'media_type': media_type,
+    }
+    return render(request, 'analysis/analysis_delete.html', context)
 
 
 def serve_analysis_video(request, analysis_id):
@@ -239,3 +294,26 @@ def serve_analysis_video(request, analysis_id):
         
         return response
     
+
+def serve_analysis_image(request, analysis_id):
+    """
+    분석 결과 이미지 제공 (동영상 스트리밍 로직의 이미지 버전)
+    """
+    from django.conf import settings
+    
+    analysis = get_object_or_404(Analysis, id=analysis_id)
+    
+    if not analysis.output_video_path:
+        raise Http404("처리된 결과 파일이 없습니다.")
+    
+    image_path = os.path.join(settings.BASE_DIR, 'media', analysis.output_video_path)
+    
+    if not os.path.exists(image_path):
+        raise Http404("이미지 파일을 찾을 수 없습니다.")
+    
+    content_type, _ = mimetypes.guess_type(image_path)
+    content_type = content_type or 'image/jpeg'
+    
+    response = FileResponse(open(image_path, 'rb'), content_type=content_type)
+    
+    return response

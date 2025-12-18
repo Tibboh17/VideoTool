@@ -22,6 +22,9 @@ urlpatterns = [
     # 결과 동영상 스트리밍
     path('<int:analysis_id>/stream/', views.serve_analysis_video, name='serve_analysis_video'),
 
+    # 결과 이미지용 처리
+    path('analysis/<int:analysis_id>/image/', views.serve_analysis_image, name='serve_analysis_image'),
+
     # 분석 스트림 삭제 
     path('<int:analysis_id>/delete/', views.analysis_delete, name='analysis_delete'),
 

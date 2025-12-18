@@ -131,23 +131,16 @@
                         <tr>
                             <td><strong>#{{ detection.id }}</strong></td>
                             <td>
-                                <a href="{% url 'video_detail' detection.analysis.video.id %}">
-                                    {{ detection.analysis.video.title|truncatewords:5 }}
-                                </a>
-                            </td>
-                            <td>
-                                <small>{{ detection.model.name|truncatewords:3 }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-{{ detection.get_status_display_badge }}">
-                                    {{ detection.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if detection.total_detections %}
-                                    <span class="badge bg-info">{{ detection.total_detections }}</span>
+                                {% if detection.analysis.video %}
+                                    <a href="{% url 'video_detail' detection.analysis.video.id %}">
+                                        <i class="bi bi-film me-1"></i> {{ detection.analysis.video.title|truncatewords:5 }}
+                                    </a>
+                                {% elif detection.analysis.image %}
+                                    <a href="{% url 'image_detail' detection.analysis.image.id %}">
+                                        <i class="bi bi-image me-1"></i> {{ detection.analysis.image.title|truncatewords:5 }}
+                                    </a>
                                 {% else %}
-                                    -
+                                    <span class="text-muted">알 수 없는 미디어</span>
                                 {% endif %}
                             </td>
                             <td>

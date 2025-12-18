@@ -256,14 +256,20 @@ def detection_status(request, detection_id):
 def detection_result(request, detection_id):
     """감지 결과 페이지"""
     detection = get_object_or_404(Detection, id=detection_id)
+    analysis = detection.analysis
+    
+    # 미디어 정보 가져오기
+    media = analysis.get_media()
+    media_type = analysis.get_media_type()
     
     # 결과 파싱
     results = detection.get_results()
     
     context = {
         'detection': detection,
-        'analysis': detection.analysis,
-        'video': detection.analysis.video,
+        'analysis': analysis,
+        'media': media,           
+        'media_type': media_type,
         'results': results,
     }
     return render(request, 'detection/detection_result.html', context)

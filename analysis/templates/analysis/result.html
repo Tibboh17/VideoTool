@@ -1,57 +1,64 @@
 {% extends 'videos/base.html' %}
 
-{% block title %}분석 결과{% endblock %}
+{% block title %}분석 결과 - {{ media.title }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-12">
-        <div class="alert alert-success">
-            <h4><i class="bi bi-check-circle"></i> 전처리 완료!</h4>
+        <div class="alert alert-success border-0 shadow-sm">
+            <h5 class="mb-0"><i class="bi bi-check-circle-fill me-2"></i> 전처리 완료!</h5>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- 원본 동영상 -->
     <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h4>원본 동영상</h4>
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">원본 {% if media_type == 'video' %}동영상{% else %}이미지{% endif %}</h6>
             </div>
             <div class="card-body">
-                <video width="100%" controls preload="metadata">
-                    <source src="{% url 'serve_video' video.pk %}" type="video/mp4">
-                </video>
+                {% if media_type == 'video' %}
+                    <video width="100%" controls preload="metadata" class="rounded">
+                        <source src="{% url 'serve_video' media.pk %}" type="video/mp4">
+                    </video>
+                {% else %}
+                    <img src="{{ media.file.url }}" class="img-fluid rounded" alt="원본 이미지">
+                {% endif %}
                 <div class="mt-2">
-                    <p class="text-muted mb-1">{{ video.title }}</p>
-                    <small>크기: {{ video.get_file_size_display }}</small>
+                    <p class="text-muted mb-1">{{ media.title }}</p>
+                    <small class="text-secondary">크기: {{ media.get_file_size_display }}</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 처리된 동영상 -->
     <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h4>처리된 동영상</h4>
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-white py-3 text-primary">
+                <h6 class="mb-0 fw-bold">처리된 결과</h6>
             </div>
             <div class="card-body">
-                <video width="100%" controls preload="metadata">
-                    <source src="{% url 'serve_analysis_video' analysis.id %}" type="video/mp4">
-                    브라우저가 동영상 재생을 지원하지 않습니다.
-                </video>
+                {% if media_type == 'video' %}
+                    <video id="processedVideo" width="100%" controls preload="metadata" class="rounded">
+                        <source src="{% url 'serve_analysis_video' analysis.id %}" type="video/mp4">
+                        브라우저가 동영상을 지원하지 않습니다.
+                    </video>
+                {% else %}
+                    <img src="{% url 'serve_analysis_image' analysis.id %}" class="img-fluid rounded shadow-sm" alt="처리된 이미지">
+                {% endif %}
                 
-                <!-- 정보와 다운로드 버튼 좌우 배치 -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div>
                         <p class="text-muted mb-1">전처리 완료</p>
-                        <small>프레임: {{ analysis.processed_frames }}</small>
+                        {% if media_type == 'video' %}
+                            <small>프레임: {{ analysis.processed_frames }}</small>
+                        {% endif %}
                     </div>
                     <div>
-                        <a href="{% url 'serve_analysis_video' analysis.id %}" 
-                        download="processed_{{ video.file.name }}" 
-                        class="btn btn-success">
+                        <a href="{% if media_type == 'video' %}{% url 'serve_analysis_video' analysis.id %}{% else %}{% url 'serve_analysis_image' analysis.id %}{% endif %}" 
+                           download="processed_{{ media.file.name }}" 
+                           class="btn btn-success" style="border-radius: 8px;">
                             <i class="bi bi-download"></i> 다운로드
                         </a>
                     </div>
@@ -61,130 +68,132 @@
     </div>
 </div>
 
-<!-- 파이프라인 정보 -->
 <div class="row">
     <div class="col-md-12">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h4>적용된 전처리 파이프라인</h4>
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">적용된 전처리 파이프라인</h6>
             </div>
             <div class="card-body">
-                <ol>
+                <ol class="mb-3">
                     {% for step in analysis.get_pipeline_display %}
-                    <li>{{ step }}</li>
+                        <li>{{ step }}</li>
                     {% endfor %}
                 </ol>
                 
-                <div class="mt-3">
-                    <p><strong>처리 시간:</strong> 
+                <div class="pt-3 border-top">
+                    <p class="mb-1"><strong>처리 시간:</strong> 
                         {% if analysis.started_at and analysis.completed_at %}
                             {{ analysis.get_duration|floatformat:1 }}초
                         {% endif %}
                     </p>
-                    <p><strong>총 프레임:</strong> {{ analysis.total_frames }}</p>
+                    <p class="mb-0"><strong>{% if media_type == 'video' %}총 프레임{% else %}이미지 해상도{% endif %}:</strong> {{ analysis.total_frames }}</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 액션 버튼 -->
-<div class="card mb-4">
+<div class="card mb-4 border-0 shadow-sm">
     <div class="card-body">
         <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-            <!-- 모델 적용 -->
             {% if analysis.status == 'completed' %}
-            <a href="{% url 'start_detection' analysis.id %}" class="btn btn-primary">
+            <a href="{% url 'start_detection' analysis.id %}" class="btn btn-primary px-4" style="border-radius: 8px;">
                 <i class="bi bi-cpu"></i> 모델 적용
             </a>
             {% else %}
-            <button class="btn btn-secondary" disabled title="분석이 완료되어야 합니다">
+            <button class="btn btn-secondary px-4" disabled title="분석이 완료되어야 합니다" style="border-radius: 8px;">
                 <i class="bi bi-cpu"></i> 모델 적용
             </button>
             {% endif %}
             
-            <!-- 다시 전처리 -->
-            <a href="{% url 'start_analysis' video.id %}" class="btn btn-warning">
+            <a href="{% url 'start_analysis' media.id %}" class="btn btn-warning px-4" style="border-radius: 8px;">
                 <i class="bi bi-arrow-counterclockwise"></i> 다시 전처리하기
             </a>
             
-            <!-- 돌아가기 -->
-            <a href="{% url 'video_detail' video.id %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> 동영상으로 돌아가기
+            <a href="{% if media_type == 'video' %}{% url 'video_detail' media.id %}{% else %}{% url 'image_detail' media.id %}{% endif %}" 
+               class="btn btn-outline-secondary px-4" style="border-radius: 8px;">
+                <i class="bi bi-arrow-left"></i> 상세로 돌아가기
             </a>
         </div>
     </div>
 </div>
 
 <script>
-const processedVideo = document.getElementById('processedVideo');
+// media_type 변수를 JS에서 인식하도록 설정
+const mediaType = "{{ media_type }}";
 
-function reloadVideo() {
-    console.log('🔄 동영상 다시 로드');
-    processedVideo.load();
-}
+if (mediaType === 'video') {
+    const processedVideo = document.getElementById('processedVideo');
 
-if (processedVideo) {
-    console.log('🎬 동영상 요소:', processedVideo);
-    console.log('🎬 소스 URL:', processedVideo.querySelector('source')?.src);
-    
-    // 강제로 로드 시도
-    processedVideo.load();
-    
-    processedVideo.addEventListener('loadstart', function() {
-        console.log('📥 loadstart');
-    });
-    
-    processedVideo.addEventListener('loadedmetadata', function() {
-        console.log('✅ loadedmetadata');
-        console.log('Duration:', processedVideo.duration);
-        console.log('ReadyState:', processedVideo.readyState);
-    });
-    
-    processedVideo.addEventListener('loadeddata', function() {
-        console.log('✅ loadeddata');
-    });
-    
-    processedVideo.addEventListener('canplay', function() {
-        console.log('✅ canplay - 재생 가능!');
-    });
-    
-    processedVideo.addEventListener('canplaythrough', function() {
-        console.log('✅ canplaythrough - 전체 재생 가능!');
-    });
-    
-    processedVideo.addEventListener('progress', function() {
-        if (processedVideo.buffered.length > 0) {
-            const bufferedEnd = processedVideo.buffered.end(0);
-            const duration = processedVideo.duration;
-            const percent = (bufferedEnd / duration * 100).toFixed(2);
-            console.log(`📊 버퍼링: ${percent}% (${bufferedEnd.toFixed(2)}s / ${duration.toFixed(2)}s)`);
-        }
-    });
-    
-    processedVideo.addEventListener('waiting', function() {
-        console.log('⏳ waiting - 버퍼링 중');
-    });
-    
-    processedVideo.addEventListener('stalled', function() {
-        console.warn('⚠️  stalled - 로딩 멈춤');
-    });
-    
-    processedVideo.addEventListener('suspend', function() {
-        console.log('⏸️  suspend - 로딩 일시중단');
-    });
-    
-    processedVideo.addEventListener('error', function(e) {
-        console.error('❌ 에러!');
-        console.error('Error code:', processedVideo.error?.code);
-        console.error('Error message:', processedVideo.error?.message);
-        console.error('Network state:', processedVideo.networkState);
-        console.error('Ready state:', processedVideo.readyState);
+    function reloadVideo() {
+        console.log('🔄 동영상 다시 로드');
+        if (processedVideo) processedVideo.load();
+    }
+
+    if (processedVideo) {
+        console.log('🎬 동영상 요소:', processedVideo);
+        console.log('🎬 소스 URL:', processedVideo.querySelector('source')?.src);
         
-        alert('동영상 로드 실패! F12 콘솔을 확인하세요.');
-    });
+        // 강제로 로드 시도
+        processedVideo.load();
+        
+        processedVideo.addEventListener('loadstart', function() {
+            console.log('📥 loadstart');
+        });
+        
+        processedVideo.addEventListener('loadedmetadata', function() {
+            console.log('✅ loadedmetadata');
+            console.log('Duration:', processedVideo.duration);
+            console.log('ReadyState:', processedVideo.readyState);
+        });
+        
+        processedVideo.addEventListener('loadeddata', function() {
+            console.log('✅ loadeddata');
+        });
+        
+        processedVideo.addEventListener('canplay', function() {
+            console.log('✅ canplay - 재생 가능!');
+        });
+        
+        processedVideo.addEventListener('canplaythrough', function() {
+            console.log('✅ canplaythrough - 전체 재생 가능!');
+        });
+        
+        processedVideo.addEventListener('progress', function() {
+            if (processedVideo.buffered.length > 0) {
+                const bufferedEnd = processedVideo.buffered.end(0);
+                const duration = processedVideo.duration;
+                const percent = (bufferedEnd / duration * 100).toFixed(2);
+                console.log(`📊 버퍼링: ${percent}% (${bufferedEnd.toFixed(2)}s / ${duration.toFixed(2)}s)`);
+            }
+        });
+        
+        processedVideo.addEventListener('waiting', function() {
+            console.log('⏳ waiting - 버퍼링 중');
+        });
+        
+        processedVideo.addEventListener('stalled', function() {
+            console.warn('⚠️  stalled - 로딩 멈춤');
+        });
+        
+        processedVideo.addEventListener('suspend', function() {
+            console.log('⏸️  suspend - 로딩 일시중단');
+        });
+        
+        processedVideo.addEventListener('error', function(e) {
+            console.error('❌ 에러!');
+            console.error('Error code:', processedVideo.error?.code);
+            console.error('Error message:', processedVideo.error?.message);
+            console.error('Network state:', processedVideo.networkState);
+            console.error('Ready state:', processedVideo.readyState);
+            
+            // 이미지 모드일 때는 에러 알람을 띄우지 않도록 체크
+            if (mediaType === 'video') {
+                alert('동영상 로드 실패! F12 콘솔을 확인하세요.');
+            }
+        });
+    }
 }
 </script>
-
-
 {% endblock %}

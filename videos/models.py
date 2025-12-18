@@ -22,36 +22,39 @@ def sanitize_filename(filename):
     
     # 파일명이 비어있으면 기본값 사용
     if not name:
-        name = 'video'
+        name = 'file'
     
     return name, ext.lower()
 
 def video_upload_path(instance, filename):
     """동영상 업로드 경로: videos/YYYY/원본파일명_MMDDhhmmss.확장자"""
     now = timezone.now()
-    
-    # 파일명 안전하게 정리
     name, ext = sanitize_filename(filename)
-    
-    # 새 파일명: 원본파일명_MMDDhhmmss.확장자
     new_filename = f"{name}_{now.strftime('%m%d%H%M%S')}{ext}"
     
-    # 경로: videos/YYYY/파일명
     return os.path.join(
         'videos',
         str(now.year),
         new_filename
     )
 
-def thumbnail_upload_path(instance, filename):
-    """썸네일 업로드 경로: thumbnails/YYYY/원본파일명_thumb_MMDDhhmmss.jpg"""
+def image_upload_path(instance, filename):
+    """이미지 업로드 경로: images/YYYY/원본파일명_MMDDhhmmss.확장자"""
     now = timezone.now()
-    
-    # 파일명 안전하게 정리
     name, ext = sanitize_filename(filename)
+    new_filename = f"{name}_{now.strftime('%m%d%H%M%S')}{ext}"
     
-    # 새 파일명
-    new_filename = f"{name}.jpg"
+    return os.path.join(
+        'images',
+        str(now.year),
+        new_filename
+    )
+
+def thumbnail_upload_path(instance, filename):
+    """썸네일 업로드 경로"""
+    now = timezone.now()
+    name, ext = sanitize_filename(filename)
+    new_filename = f"{name}_thumb_{now.strftime('%m%d%H%M%S')}.jpg"
     
     return os.path.join(
         'thumbnails',
@@ -91,3 +94,39 @@ class Video(models.Model):
                 return f"{size:.2f} {unit}"
             size /= 1024.0
         return f"{size:.2f} PB"
+    
+class Image(models.Model):
+    """이미지 모델"""
+    title = models.CharField(max_length=200, verbose_name='제목')
+    description = models.TextField(blank=True, verbose_name='설명')
+    file = models.ImageField(
+        upload_to=image_upload_path,
+        verbose_name='이미지 파일'
+    )
+    file_size = models.BigIntegerField(default=0, verbose_name='파일 크기')
+    width = models.IntegerField(default=0, verbose_name='너비')
+    height = models.IntegerField(default=0, verbose_name='높이')
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='업로드 시간')
+    
+    class Meta:
+        verbose_name = '이미지'
+        verbose_name_plural = '이미지들'
+        ordering = ['-uploaded_at']
+    
+    def __str__(self):
+        return self.title
+    
+    def get_file_size_display(self):
+        """파일 크기를 읽기 쉬운 형식으로 반환"""
+        size = self.file_size
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.2f} {unit}"
+            size /= 1024.0
+        return f"{size:.2f} TB"
+    
+    def get_resolution_display(self):
+        """해상도 표시"""
+        if self.width and self.height:
+            return f"{self.width} × {self.height}"
+        return "-"

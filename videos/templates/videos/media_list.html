@@ -1,0 +1,202 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}미디어 관리{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="bi bi-collection-play"></i> 미디어 관리
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="{% url 'upload_media' %}?type=video" class="btn btn-primary">
+                <i class="bi bi-camera-video"></i> 동영상 업로드
+            </a>
+            <a href="{% url 'upload_media' %}?type=image" class="btn btn-success">
+                <i class="bi bi-image"></i> 이미지 업로드
+            </a>
+        </div>
+    </div>
+
+    <!-- 탭과 검색 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <!-- 탭 -->
+                    <ul class="nav nav-pills">
+                        <li class="nav-item">
+                            <a class="nav-link {% if tab == 'all' %}active{% endif %}" 
+                               href="?tab=all{% if search %}&search={{ search }}{% endif %}">
+                                <i class="bi bi-collection"></i> 전체 
+                                <span class="badge bg-secondary ms-1">{{ video_count|add:image_count }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if tab == 'video' %}active{% endif %}" 
+                               href="?tab=video{% if search %}&search={{ search }}{% endif %}">
+                                <i class="bi bi-camera-video"></i> 동영상 
+                                <span class="badge bg-primary ms-1">{{ video_count }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if tab == 'image' %}active{% endif %}" 
+                               href="?tab=image{% if search %}&search={{ search }}{% endif %}">
+                                <i class="bi bi-image"></i> 이미지 
+                                <span class="badge bg-success ms-1">{{ image_count }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <!-- 검색 -->
+                    <form method="get" class="d-flex">
+                        <input type="hidden" name="tab" value="{{ tab }}">
+                        <input type="text" name="search" class="form-control" 
+                               placeholder="제목으로 검색..." value="{{ search }}">
+                        <button type="submit" class="btn btn-outline-secondary ms-2 d-inline-flex align-items-center flex-nowrap" 
+                                style="white-space: nowrap; px-4;"> <i class="bi bi-search me-1"></i>
+                            <span style="font-size: 0.75rem; font-weight: 500;">검색</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 미디어 그리드 -->
+    {% if media_items %}
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for item in media_items %}
+        <div class="col">
+            <div class="card h-100 shadow-sm hover-card">
+                <!-- 썸네일/이미지 -->
+                <div class="position-relative" style="height: 200px; overflow: hidden;">
+                    {% if item.thumbnail %}
+                        <img src="{{ item.thumbnail.url }}" class="card-img-top h-100 w-100" 
+                             style="object-fit: cover;" alt="{{ item.title }}">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                            {% if item.type == 'video' %}
+                                <i class="bi bi-camera-video text-muted" style="font-size: 3rem;"></i>
+                            {% else %}
+                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- 타입 배지 -->
+                    <span class="position-absolute top-0 end-0 m-2">
+                        {% if item.type == 'video' %}
+                            <span class="badge bg-primary">
+                                <i class="bi bi-camera-video"></i> 동영상
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-image"></i> 이미지
+                            </span>
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title text-truncate" title="{{ item.title }}">{{ item.title }}</h5>
+                    <p class="card-text small text-muted">
+                        <i class="bi bi-hdd"></i> {{ item.file_size }}
+                        {% if item.type == 'image' and item.resolution %}
+                            <br><i class="bi bi-aspect-ratio"></i> {{ item.resolution }}
+                        {% endif %}
+                        <br><i class="bi bi-calendar"></i> {{ item.uploaded_at|date:"Y-m-d H:i" }}
+                    </p>
+                </div>
+                
+                <div class="card-footer bg-white border-0">
+                    <div class="d-grid gap-2">
+                        {% if item.type == 'video' %}
+                            <a href="{% url 'video_detail' item.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> 상세보기
+                            </a>
+                        {% else %}
+                            <a href="{% url 'image_detail' item.id %}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-eye"></i> 상세보기
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj and page_obj.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&tab={{ tab }}{% if search %}&search={{ search }}{% endif %}">
+                    이전
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}&tab={{ tab }}{% if search %}&search={{ search }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&tab={{ tab }}{% if search %}&search={{ search }}{% endif %}">
+                    다음
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div class="alert alert-light border text-center py-5">
+        <i class="bi bi-inbox" style="font-size: 4rem; color: #dee2e6;"></i>
+        <h4 class="mt-3">
+            {% if search %}
+                검색 결과가 없습니다
+            {% else %}
+                미디어가 없습니다
+            {% endif %}
+        </h4>
+        <p class="text-muted">
+            {% if search %}
+                다른 검색어로 시도해보세요.
+            {% else %}
+                동영상이나 이미지를 업로드하여 시작하세요.
+            {% endif %}
+        </p>
+        {% if not search %}
+        <div class="mt-4">
+            <a href="{% url 'upload_media' %}?type=video" class="btn btn-primary btn-lg me-2">
+                <i class="bi bi-camera-video"></i> 동영상 업로드
+            </a>
+            <a href="{% url 'upload_media' %}?type=image" class="btn btn-success btn-lg">
+                <i class="bi bi-image"></i> 이미지 업로드
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}

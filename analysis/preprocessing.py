@@ -403,3 +403,84 @@ class VideoPreprocessor:
         print(f"{'='*60}\n")
         
         return frame_count
+
+    def process_image(self, image_path, pipeline, output_path, progress_callback=None):
+        """이미지에 전처리 파이프라인 적용"""
+        
+        print(f"\n{'='*60}")
+        print(f"🖼️  이미지 처리 시작")
+        print(f"{'='*60}")
+        print(f"입력: {image_path}")
+        print(f"출력: {output_path}")
+        print(f"파이프라인: {len(pipeline)}단계")
+        
+        # 이미지 읽기
+        frame = cv2.imread(image_path)
+        
+        if frame is None:
+            raise ValueError(f"이미지를 열 수 없습니다: {image_path}")
+        
+        # 이미지 정보
+        height, width = frame.shape[:2]
+        channels = frame.shape[2] if len(frame.shape) > 2 else 1
+        
+        print(f"해상도: {width}x{height}")
+        print(f"채널: {channels}")
+        
+        total_steps = len(pipeline)
+        
+        try:
+            print(f"\n🔄 전처리 적용 중...")
+            
+            # 파이프라인 적용
+            processed_frame = frame.copy()
+            for idx, step in enumerate(pipeline):
+                step_type = step['type']
+                params = step.get('params', {})
+                
+                print(f"   단계 {idx+1}/{total_steps}: {step_type}")
+                processed_frame = self.apply_preprocessing(processed_frame, step_type, params)
+                
+                # 진행률 콜백 (0-90%)
+                if progress_callback:
+                    progress = int((idx + 1) / total_steps * 90)
+                    progress_callback(idx + 1, total_steps, progress)
+            
+            # 이미지 저장
+            print(f"\n💾 이미지 저장 중: {output_path}")
+            
+            # 출력 디렉토리 생성
+            output_dir = Path(output_path).parent
+            output_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 이미지 저장
+            success = cv2.imwrite(str(output_path), processed_frame)
+            
+            if not success:
+                raise ValueError(f"이미지 저장 실패: {output_path}")
+            
+            # 파일 확인
+            if not os.path.exists(output_path):
+                raise ValueError(f"출력 파일이 생성되지 않았습니다: {output_path}")
+            
+            file_size = os.path.getsize(output_path)
+            print(f"✅ 이미지 저장 완료")
+            print(f"📦 파일 크기: {file_size:,} bytes ({file_size/1024:.2f} KB)")
+            
+            if file_size < 100:
+                raise ValueError(f"출력 파일이 너무 작습니다: {file_size} bytes")
+            
+            if progress_callback:
+                progress_callback(total_steps, total_steps, 100)
+            
+            print(f"\n{'='*60}")
+            print(f"✨ 처리 완료!")
+            print(f"{'='*60}\n")
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"\n❌ 이미지 처리 오류: {e}")
+            import traceback
+            traceback.print_exc()
+            raise

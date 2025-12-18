@@ -13,32 +13,84 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView
+from django.db.models import Q
 
-from .forms import VideoUploadForm
-from .models import Video
+from .forms import VideoUploadForm, ImageUploadForm
+from .models import Video, Image as ImageModel
 
-class VideoListView(ListView):
-    model = Video
-    template_name = 'videos/video_list.html'
-    context_object_name = 'videos'
-    paginate_by = 9
+
+# ============ 통합 미디어 목록 ============
+class MediaListView(ListView):
+    """동영상과 이미지 통합 목록"""
+    template_name = 'videos/media_list.html'
+    context_object_name = 'media_items'
+    paginate_by = 12
 
     def get_queryset(self):
-        queryset = Video.objects.all().order_by('-uploaded_at')
+        tab = self.request.GET.get('tab', 'all')
         search = self.request.GET.get('search', '')
-        if search:
-            queryset = queryset.filter(title__icontains=search)
-        return queryset
-
+        
+        media_items = []
+        
+        # 동영상 가져오기
+        if tab in ['all', 'video']:
+            videos = Video.objects.all()
+            if search:
+                videos = videos.filter(title__icontains=search)
+            
+            for video in videos:
+                media_items.append({
+                    'type': 'video',
+                    'id': video.id,
+                    'title': video.title,
+                    'description': video.description,
+                    'file': video.file,
+                    'thumbnail': video.thumbnail,
+                    'file_size': video.get_file_size_display(),
+                    'uploaded_at': video.uploaded_at,
+                    'obj': video,
+                })
+        
+        # 이미지 가져오기
+        if tab in ['all', 'image']:
+            images = ImageModel.objects.all()
+            if search:
+                images = images.filter(title__icontains=search)
+            
+            for image in images:
+                media_items.append({
+                    'type': 'image',
+                    'id': image.id,
+                    'title': image.title,
+                    'description': image.description,
+                    'file': image.file,
+                    'thumbnail': image.file,
+                    'file_size': image.get_file_size_display(),
+                    'uploaded_at': image.uploaded_at,
+                    'resolution': image.get_resolution_display(),
+                    'obj': image,
+                })
+        
+        # 최신순 정렬
+        media_items.sort(key=lambda x: x['uploaded_at'], reverse=True)
+        
+        return media_items
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['tab'] = self.request.GET.get('tab', 'all')
         context['search'] = self.request.GET.get('search', '')
-
-        page_obj = context.get('page_obj')
-        if page_obj is not None:
-            context['videos'] = page_obj
-
+        context['video_count'] = Video.objects.count()
+        context['image_count'] = ImageModel.objects.count()
         return context
+
+
+# ============ 동영상 뷰 ============
+class VideoListView(ListView):
+    """레거시 호환용 - MediaListView로 리다이렉트"""
+    def get(self, request, *args, **kwargs):
+        return redirect('media_list')
+
 
 class VideoCreateView(CreateView):
     model = Video
@@ -72,6 +124,7 @@ class VideoCreateView(CreateView):
     def get_success_url(self):
         return reverse('video_detail', kwargs={'pk': self.object.pk})
 
+
 class VideoDetailView(DetailView):
     model = Video
     template_name = 'videos/video_detail.html'
@@ -85,11 +138,12 @@ class VideoDetailView(DetailView):
             'analyses__detections__model',
         )
 
+
 class VideoDeleteView(DeleteView):
     model = Video
     template_name = 'videos/video_delete.html'
     context_object_name = 'video'
-    success_url = reverse_lazy('video_list')
+    success_url = reverse_lazy('media_list')
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -102,6 +156,7 @@ class VideoDeleteView(DeleteView):
 
         messages.success(request, '동영상이 삭제되었습니다.')
         return super().delete(request, *args, **kwargs)
+
 
 class VideoStreamView(View):
     def get(self, request, pk):
@@ -145,6 +200,83 @@ class VideoStreamView(View):
         response['Accept-Ranges'] = 'bytes'
         return response
 
+
+# ============ 이미지 뷰 ============
+class ImageCreateView(CreateView):
+    model = ImageModel
+    form_class = ImageUploadForm
+    template_name = 'videos/image_upload.html'
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+
+        if self.object.file:
+            self.object.file_size = self.object.file.size
+            
+            # 이미지 해상도 저장
+            try:
+                from PIL import Image as PILImage
+                img = PILImage.open(self.object.file)
+                self.object.width, self.object.height = img.size
+            except Exception as e:
+                print(f"이미지 해상도 추출 실패: {e}")
+
+        self.object.save()
+        messages.success(self.request, '이미지가 성공적으로 업로드되었습니다!')
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        messages.error(self.request, '업로드 중 오류가 발생했습니다. 다시 시도해주세요.')
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        return reverse('image_detail', kwargs={'pk': self.object.pk})
+
+
+class ImageDetailView(DetailView):
+    model = ImageModel
+    template_name = 'videos/image_detail.html'
+    context_object_name = 'image'
+
+
+class ImageDeleteView(DeleteView):
+    model = ImageModel
+    template_name = 'videos/image_delete.html'
+    context_object_name = 'image'
+    success_url = reverse_lazy('media_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        if self.object.file and os.path.isfile(self.object.file.path):
+            os.remove(self.object.file.path)
+
+        messages.success(request, '이미지가 삭제되었습니다.')
+        return super().delete(request, *args, **kwargs)
+
+
+# ============ 통합 업로드 뷰 ============
+class MediaUploadView(View):
+    """동영상 또는 이미지 업로드"""
+    
+    def get(self, request):
+        upload_type = request.GET.get('type', 'video')
+        
+        if upload_type == 'image':
+            return ImageCreateView.as_view()(request)
+        else:
+            return VideoCreateView.as_view()(request)
+    
+    def post(self, request):
+        upload_type = request.GET.get('type', 'video')
+        
+        if upload_type == 'image':
+            return ImageCreateView.as_view()(request)
+        else:
+            return VideoCreateView.as_view()(request)
+
+
+# ============ 헬퍼 함수 ============
 def generate_thumbnail(video_path):
     try:
         out, _ = (

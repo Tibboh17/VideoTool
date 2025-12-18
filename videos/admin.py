@@ -1,9 +1,15 @@
 from django.contrib import admin
-from .models import Video
+from .models import Video, Image
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
-    list_display = ['title', 'uploaded_at', 'file_size', 'get_file_size_display']
+    list_display = ['title', 'file_size', 'uploaded_at']
     list_filter = ['uploaded_at']
     search_fields = ['title', 'description']
-    readonly_fields = ['uploaded_at', 'file_size']
+
+@admin.register(Image)
+class ImageAdmin(admin.ModelAdmin):
+    list_display = ['title', 'file_size', 'width', 'height', 'uploaded_at']
+    list_filter = ['uploaded_at']
+    search_fields = ['title', 'description']
+    readonly_fields = ['file_size', 'width', 'height']

@@ -1,91 +1,106 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponse, StreamingHttpResponse, Http404
-from django.contrib import messages
-from django.utils import timezone
-from django.db.models import Count, Q
-from django.conf import settings
-from analysis.models import Analysis
-from .models import (
-    Detection, 
-    DetectionModel, 
-    get_default_model_path, 
-    get_custom_model_path, 
-    sanitize_model_filename
-)
 import os
 import re
+import threading
+
+from django.conf import settings
+from django.contrib import messages
+from django.db.models import Count, Q
+from django.http import (
+    Http404,
+    HttpResponse,
+    JsonResponse,
+    StreamingHttpResponse,
+)
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.views import View
+from django.views.generic import (
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+)
 from wsgiref.util import FileWrapper
 
-def model_list(request):
-    """모델 목록"""
-    models = DetectionModel.objects.filter(is_active=True).order_by('-created_at')
-    
-    # 통계
-    total_models = models.count()
-    yolo_models = models.filter(model_type='yolo').count()
-    custom_models = models.filter(model_type='custom').count()
-    
-    context = {
-        'models': models,
-        'total_models': total_models,
-        'yolo_models': yolo_models,
-        'custom_models': custom_models,
-    }
-    return render(request, 'detection/model_list.html', context)
+from analysis.models import Analysis
+from .models import (
+    Detection,
+    DetectionModel,
+    get_custom_model_path,
+    get_default_model_path,
+)
 
 
-def model_add(request):
-    """모델 추가"""
-    if request.method == 'POST':
+class DetectionModelListView(ListView):
+    model = DetectionModel
+    template_name = 'detection/model_list.html'
+    context_object_name = 'models'
+
+    def get_queryset(self):
+        return DetectionModel.objects.filter(is_active=True).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        models = context['models']
+        context['total_models'] = models.count()
+        context['yolo_models'] = models.filter(model_type='yolo').count()
+        context['custom_models'] = models.filter(model_type='custom').count()
+        return context
+
+
+class DetectionModelAddView(View):
+    template_name = 'detection/model_add.html'
+
+    YOLO_VERSIONS = [
+        ('yolov8n.pt', 'YOLOv8 Nano (빠름, 보통 정확도)'),
+        ('yolov8s.pt', 'YOLOv8 Small (균형)'),
+        ('yolov8m.pt', 'YOLOv8 Medium (정확도 우선)'),
+        ('yolov8l.pt', 'YOLOv8 Large (정확도 매우 우선)'),
+        ('yolov8x.pt', 'YOLOv8 XLarge (최고 정확도 모델)'),
+    ]
+
+    def get(self, request):
+        return render(request, self.template_name, {'yolo_versions': self.YOLO_VERSIONS})
+
+    def post(self, request):
         name = request.POST.get('name')
         model_type = request.POST.get('model_type')
         description = request.POST.get('description', '')
         yolo_version = request.POST.get('yolo_version', '')
         model_file = request.FILES.get('model_file')
-        
-        # 설정
+
         conf_threshold = request.POST.get('conf_threshold', '0.25')
         try:
             conf_threshold = float(conf_threshold)
-        except:
+        except Exception:
             conf_threshold = 0.25
-        
-        config = {
-            'conf_threshold': conf_threshold,
-        }
-        
-        # 검증
+        config = {'conf_threshold': conf_threshold}
+
+        # 유효성 검사
         if model_type == 'yolo':
             if not model_file and not yolo_version:
-                messages.error(request, 'YOLO 모델은 파일을 업로드하거나 버전을 지정해야 합니다.')
+                messages.error(request, 'YOLO 모델은 파일 업로드나 버전 지정이 필요합니다.')
                 return redirect('detection_model_add')
         elif model_type == 'custom':
             if not model_file:
-                messages.error(request, '커스텀 모델은 파일 업로드가 필수입니다.')
+                messages.error(request, '커스텀 모델은 파일 업로드가 필요합니다.')
                 return redirect('detection_model_add')
-        
-        # 모델 경로 저장
+
+        # 모델 파일 저장
         model_path = ''
         if model_file:
-            # 파일 저장
             if model_type == 'yolo':
                 save_path = get_default_model_path(model_file.name)
             else:
                 save_path = get_custom_model_path(model_file.name)
-            
-            # 디렉토리 생성
+
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            
-            # 파일 저장
             with open(save_path, 'wb+') as destination:
                 for chunk in model_file.chunks():
                     destination.write(chunk)
-            
-            # 상대 경로 저장
+
             model_path = os.path.relpath(save_path, settings.MODELS_ROOT)
-            print(f"✅ 모델 파일 저장: {save_path}")
-        
-        # 모델 생성
+
         model = DetectionModel.objects.create(
             name=name,
             model_type=model_type,
@@ -94,100 +109,85 @@ def model_add(request):
             yolo_version=yolo_version if model_type == 'yolo' and not model_file else '',
             config=config,
         )
-        
-        messages.success(request, f'모델 "{name}"이(가) 추가되었습니다.')
+
+        messages.success(request, f'모델 "{model.name}"이(가) 추가되었습니다.')
         return redirect('detection_model_list')
-    
-    # YOLO 기본 모델 목록
-    yolo_versions = [
-        ('yolov8n.pt', 'YOLOv8 Nano (빠름, 정확도 낮음)'),
-        ('yolov8s.pt', 'YOLOv8 Small (균형)'),
-        ('yolov8m.pt', 'YOLOv8 Medium (정확도 높음)'),
-        ('yolov8l.pt', 'YOLOv8 Large (정확도 매우 높음)'),
-        ('yolov8x.pt', 'YOLOv8 XLarge (최고 정확도, 느림)'),
-    ]
-    
-    context = {
-        'yolo_versions': yolo_versions,
-    }
-    return render(request, 'detection/model_add.html', context)
 
 
-def model_detail(request, model_id):
-    """모델 상세"""
-    model = get_object_or_404(DetectionModel, id=model_id)
-    
-    # 이 모델을 사용한 감지 작업들
-    detections = Detection.objects.filter(model=model).select_related(
-        'analysis__video'
-    ).order_by('-created_at')[:10]
-    
-    # 통계
-    total_detections = Detection.objects.filter(model=model).count()
-    completed_detections = Detection.objects.filter(
-        model=model, 
-        status='completed'
-    ).count()
-    
-    context = {
-        'model': model,
-        'detections': detections,
-        'total_detections': total_detections,
-        'completed_detections': completed_detections,
-    }
-    return render(request, 'detection/model_detail.html', context)
+class DetectionModelDetailView(DetailView):
+    model = DetectionModel
+    template_name = 'detection/model_detail.html'
+    pk_url_kwarg = 'model_id'
+    context_object_name = 'model'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        model = self.object
+        detections = Detection.objects.filter(model=model).select_related(
+            'analysis__video'
+        ).order_by('-created_at')[:10]
+
+        context.update({
+            'detections': detections,
+            'total_detections': Detection.objects.filter(model=model).count(),
+            'completed_detections': Detection.objects.filter(model=model, status='completed').count(),
+        })
+        return context
 
 
-def model_delete(request, model_id):
-    """모델 삭제"""
-    model = get_object_or_404(DetectionModel, id=model_id)
-    
-    if request.method == 'POST':
-        # 이 모델을 사용하는 감지 작업 확인
-        detection_count = Detection.objects.filter(model=model).count()
-        
+class DetectionModelDeleteView(DeleteView):
+    model = DetectionModel
+    pk_url_kwarg = 'model_id'
+    success_url = reverse_lazy('detection_model_list')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        detection_count = Detection.objects.filter(model=self.object).count()
         if detection_count > 0:
             messages.warning(
-                request, 
-                f'이 모델을 사용하는 감지 작업이 {detection_count}개 있습니다. '
-                f'먼저 감지 작업을 삭제하거나 다른 모델로 변경해주세요.'
+                request,
+                f'해당 모델을 사용하는 감지 작업이 {detection_count}개 있습니다. 다른 모델로 변경 후 삭제하세요.',
             )
-            return redirect('detection_model_detail', model_id=model_id)
-        
-        # 파일 삭제
+            return redirect('detection_model_detail', model_id=self.object.id)
+
         try:
-            model.delete_files()
-        except Exception as e:
-            print(f"파일 삭제 중 오류: {e}")
-        
-        model_name = model.name
-        model.delete()
-        
+            self.object.delete_files()
+        except Exception as exc:
+            print(f"모델 파일 삭제 오류: {exc}")
+
+        model_name = self.object.name
+        response = super().post(request, *args, **kwargs)
         messages.success(request, f'모델 "{model_name}"이(가) 삭제되었습니다.')
-        return redirect('detection_model_list')
-    
-    return redirect('detection_model_detail', model_id=model_id)
+        return response
 
 
-def start_detection(request, analysis_id):
-    """감지 작업 시작"""
-    analysis = get_object_or_404(Analysis, id=analysis_id)
-    
-    if analysis.status != 'completed':
-        messages.error(request, '분석이 완료되지 않았습니다.')
-        return redirect('analysis_result', analysis_id=analysis_id)
-    
-    # 사용 가능한 모델 목록
-    models = DetectionModel.objects.filter(is_active=True)
-    
-    if request.method == 'POST':
+class StartDetectionView(View):
+    template_name = 'detection/start_detection.html'
+
+    def get(self, request, analysis_id):
+        analysis = get_object_or_404(Analysis, id=analysis_id)
+
+        if analysis.status != 'completed':
+            messages.error(request, '분석이 완료되지 않았습니다.')
+            return redirect('analysis_result', analysis_id=analysis_id)
+
+        models = DetectionModel.objects.filter(is_active=True)
+        context = {'analysis': analysis, 'models': models}
+        return render(request, self.template_name, context)
+
+    def post(self, request, analysis_id):
+        analysis = get_object_or_404(Analysis, id=analysis_id)
+
+        if analysis.status != 'completed':
+            messages.error(request, '분석이 완료되지 않았습니다.')
+            return redirect('analysis_result', analysis_id=analysis_id)
+
         model_id = request.POST.get('model_id')
         title = request.POST.get('title', '')
         description = request.POST.get('description', '')
-        
         model = get_object_or_404(DetectionModel, id=model_id)
-        
-        # Detection 객체 생성
+
         detection = Detection.objects.create(
             analysis=analysis,
             model=model,
@@ -195,204 +195,163 @@ def start_detection(request, analysis_id):
             description=description,
             status='ready',
         )
-        
+
         messages.success(request, '감지 작업이 생성되었습니다.')
         return redirect('execute_detection', detection_id=detection.id)
-    
-    context = {
-        'analysis': analysis,
-        'models': models,
-    }
-    return render(request, 'detection/start_detection.html', context)
 
 
-def execute_detection(request, detection_id):
-    """감지 실행"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    
-    if request.method == 'POST':
-        # 백그라운드 작업 시작
+class ExecuteDetectionView(View):
+    template_name = 'detection/execute_detection.html'
+
+    def get(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
+        return render(request, self.template_name, {'detection': detection})
+
+    def post(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
         from .tasks import process_detection
-        
-        # 즉시 처리 (나중에 Celery로 변경 가능)
-        import threading
+
         thread = threading.Thread(target=process_detection, args=(detection_id,))
         thread.start()
-        
+
         messages.info(request, '감지 작업이 시작되었습니다.')
         return redirect('detection_progress', detection_id=detection_id)
-    
-    context = {
-        'detection': detection,
-    }
-    return render(request, 'detection/execute_detection.html', context)
 
 
-def detection_progress(request, detection_id):
-    """진행 상황 페이지"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    
-    context = {
-        'detection': detection,
-    }
-    return render(request, 'detection/detection_progress.html', context)
+class DetectionProgressView(View):
+    template_name = 'detection/detection_progress.html'
+
+    def get(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
+        return render(request, self.template_name, {'detection': detection})
 
 
-def detection_status(request, detection_id):
-    """진행 상황 API (AJAX)"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    
-    data = {
-        'status': detection.status,
-        'progress': detection.progress,
-        'processed_frames': detection.processed_frames,
-        'total_frames': detection.total_frames,
-        'error_message': detection.error_message,
-    }
-    
-    return JsonResponse(data)
+class DetectionStatusView(View):
+    def get(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
+        return JsonResponse({
+            'status': detection.status,
+            'progress': detection.progress,
+            'processed_frames': detection.processed_frames,
+            'total_frames': detection.total_frames,
+            'error_message': detection.error_message,
+        })
 
 
-def detection_result(request, detection_id):
-    """감지 결과 페이지"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    analysis = detection.analysis
-    
-    # 미디어 정보 가져오기
-    media = analysis.get_media()
-    media_type = analysis.get_media_type()
-    
-    # 결과 파싱
-    results = detection.get_results()
-    
-    context = {
-        'detection': detection,
-        'analysis': analysis,
-        'media': media,           
-        'media_type': media_type,
-        'results': results,
-    }
-    return render(request, 'detection/detection_result.html', context)
+class DetectionResultView(View):
+    template_name = 'detection/detection_result.html'
+
+    def get(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
+        results = detection.get_results()
+
+        context = {
+            'detection': detection,
+            'analysis': detection.analysis,
+            'video': detection.analysis.video,
+            'results': results,
+        }
+        return render(request, self.template_name, context)
 
 
-def detection_dashboard(request):
-    """대시보드"""
-    # 전체 통계
-    total_detections = Detection.objects.count()
-    completed_detections = Detection.objects.filter(status='completed').count()
-    processing_detections = Detection.objects.filter(status='processing').count()
-    failed_detections = Detection.objects.filter(status='failed').count()
-    
-    # 최근 감지 작업
-    recent_detections = Detection.objects.select_related(
-        'analysis__video', 'model'
-    ).order_by('-created_at')[:10]
-    
-    # 모델별 통계
-    model_stats = DetectionModel.objects.annotate(
-        total=Count('detection'),
-        completed=Count('detection', filter=Q(detection__status='completed'))
-    ).filter(is_active=True)
-    
-    context = {
-        'total_detections': total_detections,
-        'completed_detections': completed_detections,
-        'processing_detections': processing_detections,
-        'failed_detections': failed_detections,
-        'recent_detections': recent_detections,
-        'model_stats': model_stats,
-    }
-    return render(request, 'detection/dashboard.html', context)
+class DetectionDashboardView(TemplateView):
+    template_name = 'detection/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['total_detections'] = Detection.objects.count()
+        context['completed_detections'] = Detection.objects.filter(status='completed').count()
+        context['processing_detections'] = Detection.objects.filter(status='processing').count()
+        context['failed_detections'] = Detection.objects.filter(status='failed').count()
+
+        context['recent_detections'] = Detection.objects.select_related(
+            'analysis__video', 'model'
+        ).order_by('-created_at')[:10]
+
+        context['model_stats'] = DetectionModel.objects.annotate(
+            total=Count('detection'),
+            completed=Count('detection', filter=Q(detection__status='completed')),
+        ).filter(is_active=True)
+
+        return context
 
 
-def serve_detection_video(request, detection_id):
-    """감지 결과 동영상 스트리밍"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    
-    if not detection.output_video_path:
-        raise Http404("처리된 동영상이 없습니다.")
-    
-    video_path = os.path.join(settings.BASE_DIR, 'media', detection.output_video_path)
-    
-    if not os.path.exists(video_path):
-        raise Http404("동영상 파일을 찾을 수 없습니다.")
-    
-    file_size = os.path.getsize(video_path)
-    
-    # Range Request 처리
-    range_header = request.META.get('HTTP_RANGE', '').strip()
-    range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
-    range_match = range_re.match(range_header)
-    
-    if range_match:
-        first_byte, last_byte = range_match.groups()
-        first_byte = int(first_byte) if first_byte else 0
-        last_byte = int(last_byte) if last_byte else file_size - 1
-        
-        if last_byte >= file_size:
-            last_byte = file_size - 1
-        
-        length = last_byte - first_byte + 1
-        
-        with open(video_path, 'rb') as f:
-            f.seek(first_byte)
-            data = f.read(length)
-        
-        response = HttpResponse(data, status=206, content_type='video/mp4')
-        response['Content-Length'] = str(length)
-        response['Content-Range'] = f'bytes {first_byte}-{last_byte}/{file_size}'
-        response['Accept-Ranges'] = 'bytes'
-        
-        return response
-    
-    else:
+class ServeDetectionVideoView(View):
+    def get(self, request, detection_id):
+        detection = get_object_or_404(Detection, id=detection_id)
+
+        if not detection.output_video_path:
+            raise Http404("처리된 동영상 파일이 없습니다.")
+
+        video_path = os.path.join(settings.BASE_DIR, 'media', detection.output_video_path)
+
+        if not os.path.exists(video_path):
+            raise Http404("동영상 파일을 찾을 수 없습니다.")
+
+        file_size = os.path.getsize(video_path)
+        content_type = 'video/mp4'
+
+        range_header = request.META.get('HTTP_RANGE', '').strip()
+        range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
+        range_match = range_re.match(range_header)
+
+        if range_match:
+            first_byte, last_byte = range_match.groups()
+            first_byte = int(first_byte) if first_byte else 0
+            last_byte = int(last_byte) if last_byte else file_size - 1
+
+            if last_byte >= file_size:
+                last_byte = file_size - 1
+
+            length = last_byte - first_byte + 1
+
+            with open(video_path, 'rb') as file:
+                file.seek(first_byte)
+                data = file.read(length)
+
+            response = HttpResponse(data, status=206, content_type=content_type)
+            response['Content-Length'] = str(length)
+            response['Content-Range'] = f'bytes {first_byte}-{last_byte}/{file_size}'
+            response['Accept-Ranges'] = 'bytes'
+            return response
+
         response = StreamingHttpResponse(
             FileWrapper(open(video_path, 'rb'), 8192),
-            content_type='video/mp4'
+            content_type=content_type,
         )
         response['Content-Length'] = str(file_size)
         response['Accept-Ranges'] = 'bytes'
-        
         return response
 
 
-def detection_delete(request, detection_id):
-    """감지 작업 삭제"""
-    detection = get_object_or_404(Detection, id=detection_id)
-    analysis = detection.analysis
-    model_id = detection.model.id
-    
-    # ⭐ 미디어 정보
-    media = analysis.get_media()
-    media_type = analysis.get_media_type()
-    
-    if request.method == 'POST':
-        # 파일 삭제
-        detection.delete_files()
-        
-        # 감지 작업 삭제
-        detection.delete()
-        
+class DetectionDeleteView(DeleteView):
+    model = Detection
+    pk_url_kwarg = 'detection_id'
+    template_name = 'detection/detection_delete.html'
+    context_object_name = 'detection'
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        analysis = self.object.analysis
+        media = analysis.get_media()
+        media_type = analysis.get_media_type()
+        model_id = self.object.model.id
+
+        self.object.delete_files()
+        self.object.delete()
+
         messages.success(request, '감지 작업이 삭제되었습니다.')
-        
-        # ⭐ 리다이렉트 처리
+
         redirect_to = request.POST.get('redirect', 'detection_dashboard')
-        
-        if redirect_to == 'video_detail':
+
+        if redirect_to == 'video_detail' and media_type == 'video' and media:
             return redirect('video_detail', pk=media.id)
-        elif redirect_to == 'image_detail':
+        if redirect_to == 'image_detail' and media_type == 'image' and media:
             return redirect('image_detail', pk=media.id)
-        elif redirect_to == 'analysis_result':
+        if redirect_to == 'analysis_result':
             return redirect('analysis_result', analysis_id=analysis.id)
-        elif redirect_to == 'model_detail':
+        if redirect_to == 'model_detail':
             return redirect('detection_model_detail', model_id=model_id)
-        else:
-            return redirect('detection_dashboard')
-    
-    context = {
-        'detection': detection,
-        'analysis': analysis,
-        'media': media,
-        'media_type': media_type,
-    }
-    return render(request, 'detection/detection_delete.html', context)
+
+        return redirect('detection_dashboard')

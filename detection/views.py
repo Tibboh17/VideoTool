@@ -1,7 +1,6 @@
 import os
 import re
 import threading
-
 from wsgiref.util import FileWrapper
 
 from django.conf import settings

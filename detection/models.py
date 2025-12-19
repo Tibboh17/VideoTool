@@ -1,10 +1,13 @@
-from django.db import models
-from analysis.models import Analysis
-from django.utils import timezone
-import json
-import os
-from pathlib import Path
 import re
+import os
+import json
+import shutil
+
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+
+from analysis.models import Analysis
 
 def sanitize_model_filename(filename):
     """모델 파일명을 안전하게 정리"""
@@ -21,7 +24,6 @@ def sanitize_model_filename(filename):
 
 def get_default_model_path(filename):
     """기본 모델 저장 경로"""
-    from django.conf import settings
     name, ext = sanitize_model_filename(filename)
     
     default_models_dir = getattr(
@@ -37,7 +39,6 @@ def get_default_model_path(filename):
 
 def get_custom_model_path(filename):
     """커스텀 모델 저장 경로"""
-    from django.conf import settings
     now = timezone.now()
     name, ext = sanitize_model_filename(filename)
     
@@ -151,7 +152,6 @@ class DetectionModel(models.Model):
         
         return deleted_files
 
-
 class Detection(models.Model):
     """감지 작업"""
     STATUS_CHOICES = [
@@ -245,9 +245,6 @@ class Detection(models.Model):
     
     def delete_files(self):
         """관련 파일 삭제"""
-        from django.conf import settings
-        import shutil
-        
         deleted_files = []
         
         # 출력 동영상 삭제

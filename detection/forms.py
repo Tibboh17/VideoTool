@@ -1,7 +1,9 @@
-from django import forms
-from .models import DetectionModel
-from django.core.exceptions import ValidationError
 import os
+
+from django import forms
+from django.core.exceptions import ValidationError
+
+from .models import DetectionModel
 
 class DetectionModelForm(forms.ModelForm):
     class Meta:

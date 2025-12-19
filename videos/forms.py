@@ -1,7 +1,9 @@
-from django import forms
-from .models import Video, Image
-from django.core.exceptions import ValidationError
 import os
+
+from django import forms
+from django.core.exceptions import ValidationError
+
+from .models import Video, Image
 
 class VideoUploadForm(forms.ModelForm):
     class Meta:
@@ -30,7 +32,6 @@ class VideoUploadForm(forms.ModelForm):
             if file.size > 1024 * 1024 * 1024:
                 raise forms.ValidationError('파일 크기는 1GB를 초과할 수 없습니다.')
         return file
-
 
 class ImageUploadForm(forms.ModelForm):
     class Meta:

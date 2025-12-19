@@ -1,10 +1,10 @@
 import os
 import re
-import mimetypes
-from io import BytesIO
-
 import ffmpeg
+import mimetypes
+
 from PIL import Image
+from io import BytesIO
 
 from django.contrib import messages
 from django.core.files.base import ContentFile
@@ -13,7 +13,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView
-from django.db.models import Q
 
 from .forms import VideoUploadForm, ImageUploadForm
 from .models import Video, Image as ImageModel

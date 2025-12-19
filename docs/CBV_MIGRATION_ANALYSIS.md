@@ -1,6 +1,6 @@
 # 목표
-- 뷰를 CBV로 전환해 로직 재사용성과 확장성을 확보한다.
-- 기존 URL name/패턴, 템플릿 컨텍스트, 동작(비동기 실행, 파일/스트리밍 처리)을 유지한다.
+- 뷰를 CBV로 전환해 로직 재사용성과 확장성을 확보한다
+- 기존 URL name/패턴, 템플릿 컨텍스트, 동작(비동기 실행, 파일/스트리밍 처리)을 유지한다
 
 # 변경 범위
 - URL 라우팅: `analysis/urls.py`
@@ -12,7 +12,7 @@
 
 ## 1. URL 라우팅 변경
 
-기존 FBV 핸들러를 CBV `as_view()`로 교체했다. URL name/패턴은 동일하다.
+기존 FBV 핸들러를 CBV `as_view()`로 교체했다. URL name/패턴은 동일하다
 - `/analysis/start/<video_id>/` → `StartAnalysisView`
 - `/analysis/<analysis_id>/add-step/` → `AddPreprocessingStepView`
 - `/analysis/<analysis_id>/remove-step/` → `RemovePreprocessingStepView`
@@ -26,7 +26,7 @@
 
 ## 2. FBV 제거
 
-기존에 존재하던 다음 FBV들은 라우팅에서 더 이상 사용되지 않으므로 제거했다.
+기존에 존재하던 다음 FBV들은 라우팅에서 더 이상 사용되지 않으므로 제거했다
 
 - `start_analysis`
 - `add_preprocessing_step`
@@ -43,7 +43,7 @@
 
 ### `StartAnalysisView` (GET/POST)
 
-- 전처리 선택 화면. 
+- 전처리 선택 화면
 - `skip_preprocessing=true` 시 Analysis를 `completed`로 만들고 결과/상세로 이동
 - 준비 상태(`ready`)가 없으면 생성
 

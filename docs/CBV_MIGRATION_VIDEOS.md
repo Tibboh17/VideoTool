@@ -1,13 +1,13 @@
 # 목표
 
-- 뷰 로직을 CBV로 전환하여 재사용성과 확장성을 높인다.
-- 기존 URL name/템플릿/화면 동작(업로드→썸네일 생성, 삭제 시 파일 삭제, 스트리밍 Range 처리)을 최대한 유지한다.
+- 뷰 로직을 CBV로 전환하여 재사용성과 확장성을 높인다
+- 기존 URL name/템플릿/화면 동작(업로드→썸네일 생성, 삭제 시 파일 삭제, 스트리밍 Range 처리)을 최대한 유지한다
 
 # 변경 범위
 
 - URL 라우팅: `videos/urls.py`
 - View 구현: `videos/views.py`
-- 템플릿 일부 수정:
+- 템플릿 일부 수정
   - `videos/templates/videos/video_list.html`
   - `videos/templates/videos/video_detail.html`
 
@@ -15,7 +15,7 @@
 
 ## 1. URL 라우팅 변경
 
-기존 FBV 핸들러를 CBV `as_view()`로 교체했다. URL name은 변경하지 않았다.
+기존 FBV 핸들러를 CBV `as_view()`로 교체했다. URL name은 변경하지 않았다
 
 - `/videos/` → `VideoListView` (`video_list`)
 - `/videos/upload/` → `VideoCreateView` (`video_upload`)
@@ -25,7 +25,7 @@
 
 ## 2. FBV 제거
 
-기존에 존재하던 다음 FBV들은 라우팅에서 더 이상 사용되지 않으므로 제거했다.
+기존에 존재하던 다음 FBV들은 라우팅에서 더 이상 사용되지 않으므로 제거했다
 
 - `video_list`
 - `video_upload`
@@ -46,7 +46,7 @@
 ### `VideoCreateView (CreateView)`
 
 - 업로드 폼 처리(`VideoUploadForm`)
-- 저장 플로우(기존 동작 유지):
+- 저장 플로우(기존 동작 유지)
   1) `file_size` 저장
   2) 1차 `save()`로 파일 경로 확보
   3) `generate_thumbnail(video.file.path)`로 썸네일 생성
@@ -57,12 +57,12 @@
 ### `VideoDetailView (DetailView)`
 
 - 비디오 상세 페이지 렌더링
-- 템플릿에서 분석/감지 정보를 사용하므로, 조회 최적화를 위해 `prefetch_related` 적용:
+- 템플릿에서 분석/감지 정보를 사용하므로, 조회 최적화를 위해 `prefetch_related` 적용
   - `analyses`
   - `analyses__detections`
   - `analyses__detections__model`
 
-> 관계 이름은 `Analysis.video`의 `related_name='analyses'`에 의해 결정된다.
+> 관계 이름은 `Analysis.video`의 `related_name='analyses'`에 의해 결정된다
 
 ### `VideoDeleteView (DeleteView)`
 
@@ -81,13 +81,13 @@
 
 ## 4. 썸네일 생성 헬퍼 유지
 
-- `generate_thumbnail(video_path)`는 기존처럼 `ffmpeg`로 프레임 1장을 추출하여 PIL로 리사이즈 후 JPEG `ContentFile`을 반환한다.
+- `generate_thumbnail(video_path)`는 기존처럼 `ffmpeg`로 프레임 1장을 추출하여 PIL로 리사이즈 후 JPEG `ContentFile`을 반환한다
 
 # 템플릿 변경 사항
 
 ## `video_list.html`
 
-- 페이지네이션 링크에서 검색어가 유지되도록 `search` 쿼리스트링을 추가했다.
+- 페이지네이션 링크에서 검색어가 유지되도록 `search` 쿼리스트링을 추가했다
   - 예: `?page=2&search=...`
 
 # 추후 개선(옵션)

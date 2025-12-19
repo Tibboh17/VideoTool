@@ -2,33 +2,19 @@ import os
 import re
 import threading
 
+from wsgiref.util import FileWrapper
+
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import Count, Q
-from django.http import (
-    Http404,
-    HttpResponse,
-    JsonResponse,
-    StreamingHttpResponse,
-)
+from django.http import Http404, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import (
-    DeleteView,
-    DetailView,
-    ListView,
-    TemplateView,
-)
-from wsgiref.util import FileWrapper
+from django.views.generic import DeleteView, DetailView, ListView, TemplateView
 
 from analysis.models import Analysis
-from .models import (
-    Detection,
-    DetectionModel,
-    get_custom_model_path,
-    get_default_model_path,
-)
+from .models import Detection, DetectionModel, get_custom_model_path, get_default_model_path
 
 
 class DetectionModelListView(ListView):
@@ -46,7 +32,6 @@ class DetectionModelListView(ListView):
         context['yolo_models'] = models.filter(model_type='yolo').count()
         context['custom_models'] = models.filter(model_type='custom').count()
         return context
-
 
 class DetectionModelAddView(View):
     template_name = 'detection/model_add.html'
@@ -113,7 +98,6 @@ class DetectionModelAddView(View):
         messages.success(request, f'모델 "{model.name}"이(가) 추가되었습니다.')
         return redirect('detection_model_list')
 
-
 class DetectionModelDetailView(DetailView):
     model = DetectionModel
     template_name = 'detection/model_detail.html'
@@ -133,7 +117,6 @@ class DetectionModelDetailView(DetailView):
             'completed_detections': Detection.objects.filter(model=model, status='completed').count(),
         })
         return context
-
 
 class DetectionModelDeleteView(DeleteView):
     model = DetectionModel
@@ -160,7 +143,6 @@ class DetectionModelDeleteView(DeleteView):
         response = super().post(request, *args, **kwargs)
         messages.success(request, f'모델 "{model_name}"이(가) 삭제되었습니다.')
         return response
-
 
 class StartDetectionView(View):
     template_name = 'detection/start_detection.html'
@@ -199,7 +181,6 @@ class StartDetectionView(View):
         messages.success(request, '감지 작업이 생성되었습니다.')
         return redirect('execute_detection', detection_id=detection.id)
 
-
 class ExecuteDetectionView(View):
     template_name = 'detection/execute_detection.html'
 
@@ -217,14 +198,12 @@ class ExecuteDetectionView(View):
         messages.info(request, '감지 작업이 시작되었습니다.')
         return redirect('detection_progress', detection_id=detection_id)
 
-
 class DetectionProgressView(View):
     template_name = 'detection/detection_progress.html'
 
     def get(self, request, detection_id):
         detection = get_object_or_404(Detection, id=detection_id)
         return render(request, self.template_name, {'detection': detection})
-
 
 class DetectionStatusView(View):
     def get(self, request, detection_id):
@@ -236,7 +215,6 @@ class DetectionStatusView(View):
             'total_frames': detection.total_frames,
             'error_message': detection.error_message,
         })
-
 
 class DetectionResultView(View):
     template_name = 'detection/detection_result.html'
@@ -252,7 +230,6 @@ class DetectionResultView(View):
             'results': results,
         }
         return render(request, self.template_name, context)
-
 
 class DetectionDashboardView(TemplateView):
     template_name = 'detection/dashboard.html'
@@ -275,7 +252,6 @@ class DetectionDashboardView(TemplateView):
         ).filter(is_active=True)
 
         return context
-
 
 class ServeDetectionVideoView(View):
     def get(self, request, detection_id):
@@ -323,7 +299,6 @@ class ServeDetectionVideoView(View):
         response['Content-Length'] = str(file_size)
         response['Accept-Ranges'] = 'bytes'
         return response
-
 
 class DetectionDeleteView(DeleteView):
     model = Detection

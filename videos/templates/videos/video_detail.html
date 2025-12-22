@@ -9,38 +9,20 @@
     <!-- 동영상 정보 카드 -->
     <div class="card mb-4">
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h5 class="card-title">{{ video.title }}</h5>
-                    <p class="card-text">
-                        <span class="badge bg-primary">
-                            <i class="bi bi-camera-video"></i> 동영상
-                        </span>
-                    </p>
-                    <p class="text-muted small">
-                        <i class="bi bi-hdd"></i> {{ video.get_file_size_display }} |
-                        <i class="bi bi-calendar"></i> {{ video.uploaded_at|date:"Y-m-d H:i" }}
-                    </p>
-                </div>
-                <div class="btn-group" role="group">
-                    <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> 목록
-                    </a>
-                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteVideoModal">
-                        <i class="bi bi-trash"></i> 삭제
-                    </button>
-                </div>
-            </div>
+            <h5 class="card-title">{{ video.title }}</h5>
+            <p class="card-text">
+                <strong>파일명:</strong> {{ video.file.name }}<br>
+                <strong>파일 크기:</strong> {{ video.get_file_size_display }}<br>
+                <strong>업로드 시간:</strong> {{ video.uploaded_at|date:"Y-m-d H:i" }}
+            </p>
+            {% if video.description %}
+            <p class="card-text">{{ video.description }}</p>
+            {% endif %}
         </div>
     </div>
 
-    <!-- 동영상 표시 -->
+    <!-- 동영상 플레이어 -->
     <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">
-                <i class="bi bi-eye"></i> 동영상
-            </h5>
-        </div>
         <div class="card-body">
             <video width="100%" controls>
                 <source src="{% url 'serve_video' video.pk %}" type="video/mp4">
@@ -48,16 +30,6 @@
             </video>
         </div>
     </div>
-
-    {% if video.description %}
-    <!-- 설명 -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h6><i class="bi bi-text-paragraph"></i> 설명</h6>
-            <p class="mb-0">{{ video.description }}</p>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- 분석 이력 -->
     <div class="card mb-4">
@@ -285,12 +257,12 @@
                 <a href="{% url 'start_analysis' video.id %}" class="btn btn-primary">
                     <i class="bi bi-play-circle"></i> 새 분석 시작
                 </a>
-                <a href="{{ video.file.url }}" download class="btn btn-outline-success">
-                    <i class="bi bi-download"></i> 다운로드
-                </a>
-                <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
+                <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-list"></i> 목록으로
                 </a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteVideoModal">
+                    <i class="bi bi-trash"></i> 동영상 삭제
+                </button>
             </div>
         </div>
     </div>

@@ -1,7 +1,11 @@
-from django.utils import timezone
-from .models import Detection
 import os
 from pathlib import Path
+
+from django.conf import settings
+from django.utils import timezone
+
+from .models import Detection
+from .detector import VideoDetector
 
 def get_original_filename(self):
     if hasattr(self, 'video') and self.video:
@@ -34,7 +38,6 @@ def process_detection(detection_id):
         if not analysis.output_video_path:
             raise ValueError("전처리된 동영상이 없습니다")
         
-        from django.conf import settings
         input_video_path = os.path.join(settings.BASE_DIR, 'media', analysis.output_video_path)
         
         if not os.path.exists(input_video_path):
@@ -60,7 +63,6 @@ def process_detection(detection_id):
         print(f"📤 출력: {output_video_path}")
         
         # 모델 타입에 따라 처리
-        from .detector import VideoDetector
         detector = VideoDetector(model)
         
         # 진행률 콜백

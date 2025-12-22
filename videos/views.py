@@ -1,10 +1,10 @@
 import os
 import re
-import mimetypes
-from io import BytesIO
-
 import ffmpeg
+import mimetypes
+
 from PIL import Image
+from io import BytesIO
 
 from django.contrib import messages
 from django.core.files.base import ContentFile
@@ -13,11 +13,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView
-from django.db.models import Q
 
 from .forms import VideoUploadForm, ImageUploadForm
 from .models import Video, Image as ImageModel
-
 
 # ============ 통합 미디어 목록 ============
 class MediaListView(ListView):
@@ -84,13 +82,11 @@ class MediaListView(ListView):
         context['image_count'] = ImageModel.objects.count()
         return context
 
-
 # ============ 동영상 뷰 ============
 class VideoListView(ListView):
     """레거시 호환용 - MediaListView로 리다이렉트"""
     def get(self, request, *args, **kwargs):
         return redirect('media_list')
-
 
 class VideoCreateView(CreateView):
     model = Video
@@ -124,7 +120,6 @@ class VideoCreateView(CreateView):
     def get_success_url(self):
         return reverse('video_detail', kwargs={'pk': self.object.pk})
 
-
 class VideoDetailView(DetailView):
     model = Video
     template_name = 'videos/video_detail.html'
@@ -137,7 +132,6 @@ class VideoDetailView(DetailView):
             'analyses__detections',
             'analyses__detections__model',
         )
-
 
 class VideoDeleteView(DeleteView):
     model = Video
@@ -156,7 +150,6 @@ class VideoDeleteView(DeleteView):
 
         messages.success(request, '동영상이 삭제되었습니다.')
         return super().delete(request, *args, **kwargs)
-
 
 class VideoStreamView(View):
     def get(self, request, pk):
@@ -200,7 +193,6 @@ class VideoStreamView(View):
         response['Accept-Ranges'] = 'bytes'
         return response
 
-
 # ============ 이미지 뷰 ============
 class ImageCreateView(CreateView):
     model = ImageModel
@@ -232,12 +224,10 @@ class ImageCreateView(CreateView):
     def get_success_url(self):
         return reverse('image_detail', kwargs={'pk': self.object.pk})
 
-
 class ImageDetailView(DetailView):
     model = ImageModel
     template_name = 'videos/image_detail.html'
     context_object_name = 'image'
-
 
 class ImageDeleteView(DeleteView):
     model = ImageModel
@@ -253,7 +243,6 @@ class ImageDeleteView(DeleteView):
 
         messages.success(request, '이미지가 삭제되었습니다.')
         return super().delete(request, *args, **kwargs)
-
 
 # ============ 통합 업로드 뷰 ============
 class MediaUploadView(View):
@@ -274,7 +263,6 @@ class MediaUploadView(View):
             return ImageCreateView.as_view()(request)
         else:
             return VideoCreateView.as_view()(request)
-
 
 # ============ 헬퍼 함수 ============
 def generate_thumbnail(video_path):

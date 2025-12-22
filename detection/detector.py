@@ -1,9 +1,9 @@
-import cv2
-import numpy as np
-from pathlib import Path
 import os
+import cv2
 import subprocess
-from django.conf import settings
+from pathlib import Path
+
+from ultralytics import YOLO
 
 class VideoDetector:
     """동영상 및 이미지 객체 감지 처리 (YOLO 기반)"""
@@ -20,7 +20,6 @@ class VideoDetector:
     def load_yolo_model(self):
         """YOLO 모델 로드 로직 (기존 유지)"""
         try:
-            from ultralytics import YOLO
             model_path = self.model.get_model_path()
             if not model_path:
                 raise ValueError("모델 파일이 지정되지 않았습니다")

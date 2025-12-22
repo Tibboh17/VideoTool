@@ -1,4 +1,8 @@
 __pycache__
 venv
+media
 
 *.mp4
+
+*.jpg
+*.png

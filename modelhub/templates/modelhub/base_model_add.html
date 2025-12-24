@@ -2,6 +2,7 @@
 
 {% block title %}기본 모델 추가{% endblock %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="container">
     <div class="row mb-4">
@@ -13,6 +14,39 @@
         </div>
     </div>
 
+=======
+{% block breadcrumb %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item" >
+                        <a href="{% url 'modelhub:model_list' %}">
+                            <i class="bi bi-box-seam"></i> 모델 허브
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item " >
+                        <a href="{% url 'modelhub:model_add'%}">
+                            <i class="bi bi-plus-circle"></i> 모델 추가
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active" >
+                        <a href="#">
+                            <i class="bi bi-plus-circle"></i> 기본 모델 추가
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock breadcrumb %}
+
+
+{% block content %}
+<div class="container">
+>>>>>>> Stashed changes
     <!-- YOLO 빠른 추가 -->
     <div class="card mb-4">
         <div class="card-header bg-success text-white">

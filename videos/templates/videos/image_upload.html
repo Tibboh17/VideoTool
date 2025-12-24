@@ -2,6 +2,14 @@
 
 {% block title %}이미지 업로드{% endblock %}
 
+{% block breadcrumb_items %}
+<li class="custom-breadcrumb-item active">
+    <a href="{% url 'upload_media' %}">
+        <i class="bi bi-image"> </i> 이미지 업로드
+    </a>
+</li>
+{% endblock %}
+
 {% block content %}
 
 <div class="row">

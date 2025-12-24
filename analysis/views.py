@@ -181,6 +181,8 @@ class AnalysisStatusView(View):
         analysis = get_object_or_404(Analysis, id=analysis_id)
         return JsonResponse({
             'status': analysis.status,
+            'status_display': analysis.get_status_display(),  # 추가
+            'status_badge': analysis.get_status_display_badge(),  # 추가
             'progress': analysis.progress,
             'current_step': analysis.current_step,
             'processed_frames': analysis.processed_frames,

@@ -2,6 +2,14 @@
 
 {% block title %}동영상 업로드{% endblock %}
 
+{% block breadcrumb_items %}
+<li class="custom-breadcrumb-item active">
+    <a href="{% url 'upload_media' %}">
+        <i class="bi bi-camera-video"></i> 동영상 업로드
+    </a>
+</li>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-12">

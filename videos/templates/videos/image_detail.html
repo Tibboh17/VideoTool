@@ -2,6 +2,14 @@
 
 {% block title %}{{ image.title }}{% endblock %}
 
+{% block breadcrumb_items %}
+<li class="custom-breadcrumb-item active">
+    <a href="{% url 'image_detail' image.id %}">
+        <i class="bi bi-image"></i> 이미지 상세
+    </a>
+</li>
+{% endblock %}
+
 {% block content %}
 
 <div class="row">
@@ -26,7 +34,10 @@
 </div>
 
 <div class="container">
+<<<<<<< Updated upstream
     <!-- <h1 class="mb-4">이미지 상세</h1> -->
+=======
+>>>>>>> Stashed changes
 
     <!-- 이미지 정보 카드 -->
     <div class="card mb-4">

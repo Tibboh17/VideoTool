@@ -2,9 +2,31 @@
 
 {% block title %}미디어 관리{% endblock %}
 
+{% block breadcrumb %}
+<div class="row">
+            <div class="col-md-12">
+                <div class="breadcrumb-container">
+                    <nav aria-label="breadcrumb">
+                        <ol class="custom-breadcrumb">
+                            <!-- 홈 (항상 표시) -->
+                            <li class="custom-breadcrumb-item active">
+                                <a href="{% url 'media_list' %}">
+                                    <i class="bi bi-collection-play"></i> 미디어 목록
+                                </a>
+                            </li>
+                            
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+
 {% block content %}
 <<<<<<< Updated upstream
 <div class="container-fluid">
+<<<<<<< Updated upstream
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
             <i class="bi bi-collection-play"></i> 미디어 목록
@@ -37,6 +59,8 @@
 
 
 <div class="container-fluid">
+=======
+>>>>>>> Stashed changes
     <!-- 탭과 검색 -->
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body p-2 p-md-3">
@@ -77,7 +101,11 @@
 
                 <!-- 검색 -->
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 <form method="get" class="d-flex gap-1 flex-shrink-0" style="width: 250px;">
+=======
+                <form method="get" class="d-flex gap-1 flex-shrink-0 me-2" style="width: 250px;">
+>>>>>>> Stashed changes
 =======
                 <form method="get" class="d-flex gap-1 flex-shrink-0 me-2" style="width: 250px;">
 >>>>>>> Stashed changes
@@ -89,7 +117,10 @@
                     </button>
                 </form>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
                 
                 <!-- 업로드 버튼 -->
                 <div class="btn-group d-flex gap-2" role="group">

@@ -130,7 +130,8 @@ class VideoDetailView(DetailView):
         return queryset.prefetch_related(
             'analyses',
             'analyses__detections',
-            'analyses__detections__model',
+            'analyses__detections__base_model',   
+            'analyses__detections__custom_model', 
         )
 
 class VideoDeleteView(DeleteView):

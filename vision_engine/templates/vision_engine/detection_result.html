@@ -1,0 +1,310 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}탐지 결과 - {{ detection.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'vision_engine:detection_list' %}">탐지 목록</a></li>
+                <li class="breadcrumb-item active">탐지 결과</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="alert alert-success border-0 shadow-sm">
+            <h5 class="mb-0"><i class="bi bi-check-circle-fill"></i> 객체 탐지 완료!</h5>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 원본 -->
+    <div class="col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    {% if detection.analysis.video %}
+                        <i class="bi bi-film"></i> 전처리된 비디오
+                    {% else %}
+                        <i class="bi bi-image"></i> 전처리된 이미지
+                    {% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if detection.analysis.video %}
+                    <video width="100%" controls class="rounded video-thumbnail"
+                           data-bs-toggle="modal" 
+                           data-bs-target="#videoModal"
+                           data-video-src="{% url 'serve_analysis_video' detection.analysis.id %}"
+                           data-video-title="전처리된 비디오">
+                        <source src="{% url 'serve_analysis_video' detection.analysis.id %}" type="video/mp4">
+                        브라우저가 비디오 재생을 지원하지 않습니다.
+                    </video>
+                {% else %}
+                    <img src="{% url 'serve_analysis_image' detection.analysis.id %}" 
+                         class="img-fluid rounded img-thumbnail"
+                         alt="전처리된 이미지"
+                         data-bs-toggle="modal"
+                         data-bs-target="#imageModal"
+                         data-img-src="{% url 'serve_analysis_image' detection.analysis.id %}"
+                         data-img-title="전처리된 이미지">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 탐지 결과 -->
+    <div class="col-md-6 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-eye-fill"></i> 탐지 결과
+            </div>
+            <div class="card-body">
+                {% if detection.output_video_path %}
+                    {% if detection.analysis.video %}
+                        <!-- 비디오 결과 -->
+                        <video width="100%" controls class="rounded video-thumbnail"
+                               data-bs-toggle="modal"
+                               data-bs-target="#videoModal"
+                               data-video-src="/media/{{ detection.output_video_path }}"
+                               data-video-title="탐지 결과">
+                            <source src="/media/{{ detection.output_video_path }}" type="video/mp4">
+                        </video>
+                    {% else %}
+                        <!-- 이미지 결과 -->
+                        <img src="/media/{{ detection.output_video_path }}" 
+                             class="img-fluid rounded img-thumbnail"
+                             alt="탐지 결과"
+                             data-bs-toggle="modal"
+                             data-bs-target="#imageModal"
+                             data-img-src="/media/{{ detection.output_video_path }}"
+                             data-img-title="탐지 결과">
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        결과 파일이 생성되지 않았습니다.
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-end mt-3">
+                    {% if detection.output_video_path %}
+                    <a href="/media/{{ detection.output_video_path }}" 
+                       download 
+                       class="btn btn-success">
+                        <i class="bi bi-download"></i> 다운로드
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 탐지 통계 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-graph-up"></i> 탐지 통계</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted">총 탐지 수</h6>
+                                <h3 class="text-primary">{{ detection.total_detections }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted">클래스 수</h6>
+                                <h3 class="text-info">{{ detection.detection_summary|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted">사용 모델</h6>
+                                <h5><span class="badge bg-success">{{ detection.get_model_name }}</span></h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted">처리 시간</h6>
+                                <h3 class="text-warning">{{ detection.get_duration_display }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 클래스별 탐지 수 -->
+                {% if detection.detection_summary %}
+                <h6 class="mt-4 mb-3">클래스별 탐지 수</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>클래스</th>
+                                <th class="text-end">탐지 수</th>
+                                <th class="text-end">비율</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for label, count in detection.detection_summary.items %}
+                            <tr>
+                                <td><span class="badge bg-secondary">{{ label }}</span></td>
+                                <td class="text-end">{{ count }}</td>
+                                <td class="text-end">
+                                    {% widthratio count detection.total_detections 100 %}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 버튼 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{% url 'vision_engine:select_model' detection.analysis.id %}" 
+                       class="btn btn-primary px-4">
+                        <i class="bi bi-arrow-repeat"></i> 다른 모델로 다시 탐지
+                    </a>
+                    <a href="{% url 'analysis_result' detection.analysis.id %}" 
+                       class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-arrow-left"></i> 분석 결과로
+                    </a>
+                    <a href="{% url 'vision_engine:detection_list' %}" 
+                       class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-list"></i> 탐지 목록
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 확대 모달 -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalTitle">이미지</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" class="img-fluid" alt="확대 이미지">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <a id="downloadImageBtn" href="" download class="btn btn-primary">
+                    <i class="bi bi-download"></i> 다운로드
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 비디오 확대 모달 -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalTitle">비디오</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <video id="modalVideo" width="100%" controls>
+                    <source id="modalVideoSource" src="" type="video/mp4">
+                </video>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <a id="downloadVideoBtn" href="" download class="btn btn-primary">
+                    <i class="bi bi-download"></i> 다운로드
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.img-thumbnail, .video-thumbnail {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.img-thumbnail:hover, .video-thumbnail:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#modalImage {
+    max-height: 80vh;
+    object-fit: contain;
+}
+</style>
+
+<script>
+// 이미지 모달
+const imageModal = document.getElementById('imageModal');
+if (imageModal) {
+    imageModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const imgSrc = button.getAttribute('data-img-src');
+        const imgTitle = button.getAttribute('data-img-title');
+        
+        document.getElementById('modalImage').src = imgSrc;
+        document.getElementById('imageModalTitle').textContent = imgTitle;
+        document.getElementById('downloadImageBtn').href = imgSrc;
+    });
+}
+
+// 비디오 모달
+const videoModal = document.getElementById('videoModal');
+if (videoModal) {
+    videoModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const videoSrc = button.getAttribute('data-video-src');
+        const videoTitle = button.getAttribute('data-video-title');
+        
+        const videoElement = document.getElementById('modalVideo');
+        const sourceElement = document.getElementById('modalVideoSource');
+        
+        sourceElement.src = videoSrc;
+        videoElement.load();
+        
+        document.getElementById('videoModalTitle').textContent = videoTitle;
+        document.getElementById('downloadVideoBtn').href = videoSrc;
+    });
+    
+    // 모달 닫을 때 비디오 정지
+    videoModal.addEventListener('hidden.bs.modal', function () {
+        const videoElement = document.getElementById('modalVideo');
+        videoElement.pause();
+        videoElement.currentTime = 0;
+    });
+}
+</script>
+{% endblock %}

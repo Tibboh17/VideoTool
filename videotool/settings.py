@@ -67,7 +67,14 @@ INSTALLED_APPS = [
     "videos",
     "analysis",
     "dashboard",
-    "detection",
+    "modelhub",
+    "vision_engine",
+
+
+    # 추후 추가 예정
+    # "monitoring",
+    
+
 ]
 
 MIDDLEWARE = [

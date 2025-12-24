@@ -24,7 +24,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('videos/', include('videos.urls')),
     path('analysis/', include('analysis.urls')),
-    path('detection/', include('detection.urls')),
+    path('modelhub/', include('modelhub.urls')),
+    path('vision/', include('vision_engine.urls')),
 ]
 
 if settings.DEBUG:

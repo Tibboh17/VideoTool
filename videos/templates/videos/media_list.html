@@ -5,9 +5,9 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>
-            <i class="bi bi-collection-play"></i> 미디어 관리
-        </h1>
+        <h2>
+            <i class="bi bi-collection-play"></i> 미디어 목록
+        </h2>
         <div class="btn-group" role="group">
             <a href="{% url 'upload_media' %}?type=video" class="btn btn-primary">
                 <i class="bi bi-camera-video"></i> 동영상 업로드
@@ -19,47 +19,52 @@
     </div>
 
     <!-- 탭과 검색 -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <!-- 탭 -->
-                    <ul class="nav nav-pills">
-                        <li class="nav-item">
-                            <a class="nav-link {% if tab == 'all' %}active{% endif %}" 
-                               href="?tab=all{% if search %}&search={{ search }}{% endif %}">
-                                <i class="bi bi-collection"></i> 전체 
-                                <span class="badge bg-secondary ms-1">{{ video_count|add:image_count }}</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if tab == 'video' %}active{% endif %}" 
-                               href="?tab=video{% if search %}&search={{ search }}{% endif %}">
-                                <i class="bi bi-camera-video"></i> 동영상 
-                                <span class="badge bg-primary ms-1">{{ video_count }}</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if tab == 'image' %}active{% endif %}" 
-                               href="?tab=image{% if search %}&search={{ search }}{% endif %}">
-                                <i class="bi bi-image"></i> 이미지 
-                                <span class="badge bg-success ms-1">{{ image_count }}</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <!-- 검색 -->
-                    <form method="get" class="d-flex">
-                        <input type="hidden" name="tab" value="{{ tab }}">
-                        <input type="text" name="search" class="form-control" 
-                               placeholder="제목으로 검색..." value="{{ search }}">
-                        <button type="submit" class="btn btn-outline-secondary ms-2 d-inline-flex align-items-center flex-nowrap" 
-                                style="white-space: nowrap; px-4;"> <i class="bi bi-search me-1"></i>
-                            <span style="font-size: 0.75rem; font-weight: 500;">검색</span>
-                        </button>
-                    </form>
-                </div>
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body p-2 p-md-3">
+            <div class="d-flex gap-2 align-items-center">
+                <!-- 탭 -->
+                <ul class="nav nav-pills flex-shrink-0">
+                    <li class="nav-item">
+                        <a class="nav-link py-1 py-md-2 px-2 px-md-3 {% if tab == 'all' %}active{% endif %}" 
+                        href="?tab=all{% if search %}&search={{ search }}{% endif %}"
+                        title="전체">
+                            <i class="bi bi-collection"></i>
+                            <span class="d-none d-lg-inline ms-1">전체</span>
+                            <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">{{ video_count|add:image_count }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 py-md-2 px-2 px-md-3 {% if tab == 'video' %}active{% endif %}" 
+                        href="?tab=video{% if search %}&search={{ search }}{% endif %}"
+                        title="동영상">
+                            <i class="bi bi-camera-video"></i>
+                            <span class="d-none d-lg-inline ms-1">동영상</span>
+                            <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">{{ video_count }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link py-1 py-md-2 px-2 px-md-3 {% if tab == 'image' %}active{% endif %}" 
+                        href="?tab=image{% if search %}&search={{ search }}{% endif %}"
+                        title="이미지">
+                            <i class="bi bi-image"></i>
+                            <span class="d-none d-lg-inline ms-1">이미지</span>
+                            <span class="badge bg-success ms-1" style="font-size: 0.65rem;">{{ image_count }}</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- 중간 여백 (남은 공간 채움) -->
+                <div class="flex-grow-1"></div>
+
+                <!-- 검색 -->
+                <form method="get" class="d-flex gap-1 flex-shrink-0" style="width: 250px;">
+                    <input type="hidden" name="tab" value="{{ tab }}">
+                    <input type="text" name="search" class="form-control form-control-sm" 
+                        placeholder="검색..." value="{{ search }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -191,6 +196,18 @@
 </div>
 
 <style>
+/* 탭 크기 조절 */
+.nav-pills .nav-link {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+@media (min-width: 992px) {
+    .nav-pills .nav-link {
+        font-size: 0.9rem;
+    }
+}
+
 .hover-card {
     transition: transform 0.2s, box-shadow 0.2s;
 }

@@ -136,7 +136,7 @@
                                         <a href="{% url 'analysis_result' analysis.id %}" class="btn btn-outline-primary btn-sm">
                                             <i class="bi bi-eye"></i> 결과 보기
                                         </a>
-                                        <a href="{% url 'start_detection' analysis.id %}" class="btn btn-outline-success btn-sm">
+                                        <a href="{% url 'vision_engine:select_model' analysis.id %}" class="btn btn-outline-success btn-sm">
                                             <i class="bi bi-cpu"></i> 모델 적용
                                         </a>
                                     {% elif analysis.status == 'processing' %}
@@ -187,8 +187,8 @@
                                                     <td><strong>#{{ detection.id }}</strong></td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <small class="me-2">{{ detection.model.name|truncatewords:3 }}</small>
-                                                            {% if detection.model.model_type == 'yolo' %}
+                                                            <small class="me-2">{{ detection.get_model_name|truncatewords:3 }}</small>
+                                                            {% if detection.base_model %}
                                                                 <span class="badge bg-primary">YOLO</span>
                                                             {% else %}
                                                                 <span class="badge bg-secondary">Custom</span>
@@ -213,12 +213,12 @@
                                                     <td>
                                                         <div class="btn-group btn-group-sm" role="group">
                                                             {% if detection.status == 'completed' %}
-                                                                <a href="{% url 'detection_result' detection.id %}" 
+                                                                <a href="{% url 'vision_engine:detection_result' detection.id %}" 
                                                                    class="btn btn-outline-primary">
                                                                     <i class="bi bi-eye"></i> 결과
                                                                 </a>
                                                             {% elif detection.status == 'processing' %}
-                                                                <a href="{% url 'detection_progress' detection.id %}" 
+                                                                <a href="{% url 'vision_engine:detection_progress' detection.id %}" 
                                                                    class="btn btn-outline-primary">
                                                                     <i class="bi bi-hourglass-split"></i> 진행
                                                                 </a>
@@ -243,7 +243,7 @@
                                             <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
                                             <p class="mb-2 text-muted">아직 감지 이력이 없습니다.</p>
                                             {% if analysis.status == 'completed' %}
-                                                <a href="{% url 'start_detection' analysis.id %}" class="btn btn-sm btn-success">
+                                                <a href="{% url 'vision_engine:select_model' analysis.id %}" class="btn btn-sm btn-success">
                                                     <i class="bi bi-plus-circle"></i> 첫 감지 작업 시작하기
                                                 </a>
                                             {% else %}
@@ -255,7 +255,7 @@
                                 
                                 {% if analysis.status == 'completed' and analysis.detections.exists %}
                                 <div class="text-center mt-3">
-                                    <a href="{% url 'start_detection' analysis.id %}" class="btn btn-sm btn-outline-success">
+                                    <a href="{% url 'vision_engine:select_model' analysis.id %}" class="btn btn-sm btn-outline-success">
                                         <i class="bi bi-plus-circle"></i> 새 감지 작업 추가
                                     </a>
                                 </div>
@@ -453,7 +453,7 @@ function deleteDetection(button) {
     
     const form = document.getElementById('deleteDetectionForm');
     if (form) {
-        form.action = `/detection/${detectionId}/delete/`;
+        form.action = `/vision/${detectionId}/delete/`;
     }
     
     if (deleteDetectionModal) {

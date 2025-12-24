@@ -1,0 +1,203 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}모델 선택 - {{ analysis.video.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'analysis_result' analysis.id %}">분석 결과</a></li>
+                <li class="breadcrumb-item active">모델 선택</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-cpu-fill"></i> 객체 탐지 모델 선택</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">분석이 완료된 미디어에 적용할 객체 탐지 모델을 선택하세요.</p>
+                <p><strong>미디어:</strong> 
+                {% if analysis.video %}
+                    {{ analysis.video.title }}
+                {% elif analysis.image %}
+                    {{ analysis.image.title }}
+                {% else %}
+                    알 수 없음
+                {% endif %}
+                </p>
+                <p><strong>전처리 단계:</strong> {{ analysis.preprocessing_pipeline|length }}개</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <!-- 기본 모델 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h5 class="mb-3"><i class="bi bi-star-fill text-warning"></i> 기본 모델 (YOLO)</h5>
+            
+            {% if base_models %}
+            <div class="row">
+                {% for model in base_models %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="model_type" value="base" 
+                                       id="base_{{ model.id }}"
+                                       data-model-id="{{ model.id }}"
+                                       {% if forloop.first %}checked{% endif %}>
+                                <label class="form-check-label w-100" for="base_{{ model.id }}">
+                                    <h6 class="mb-2">{{ model.display_name }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-tag"></i> {{ model.yolo_version }}
+                                    </p>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-graph-up"></i> 사용 횟수: {{ model.usage_count }}
+                                    </p>
+                                    {% if model.description %}
+                                    <p class="small mb-0">{{ model.description|truncatewords:15 }}</p>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                사용 가능한 기본 모델이 없습니다. 
+                <a href="{% url 'modelhub:model_add' %}" class="alert-link">모델을 추가</a>하세요.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 커스텀 모델 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h5 class="mb-3"><i class="bi bi-upload text-info"></i> 커스텀 모델</h5>
+            
+            {% if custom_models %}
+            <div class="row">
+                {% for model in custom_models %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                        <div class="card-body">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="model_type" value="custom" 
+                                       id="custom_{{ model.id }}"
+                                       data-model-id="{{ model.id }}">
+                                <label class="form-check-label w-100" for="custom_{{ model.id }}">
+                                    <h6 class="mb-2">{{ model.name }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-cpu"></i> {{ model.framework }}
+                                    </p>
+                                    {% if model.accuracy %}
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-check-circle"></i> 정확도: {{ model.accuracy }}%
+                                    </p>
+                                    {% endif %}
+                                    <p class="text-muted small mb-1">
+                                        <i class="bi bi-graph-up"></i> 사용 횟수: {{ model.usage_count }}
+                                    </p>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                커스텀 모델이 없습니다. 
+                <a href="{% url 'modelhub:model_add' %}" class="alert-link">모델을 업로드</a>하세요.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 탐지 정보 입력 -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="mb-3">탐지 작업 정보 (선택)</h6>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">작업 제목</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="예: 사람 탐지 작업">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" placeholder="탐지 작업에 대한 설명을 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 숨겨진 입력 -->
+    <input type="hidden" name="model_id" id="model_id">
+    
+    <!-- 버튼 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn">
+                    <i class="bi bi-play-circle-fill"></i> 탐지 시작
+                </button>
+                <a href="{% url 'analysis_result' analysis.id %}" class="btn btn-outline-secondary btn-lg px-5">
+                    <i class="bi bi-arrow-left"></i> 취소
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<style>
+.hover-shadow {
+    transition: box-shadow 0.3s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radios = document.querySelectorAll('input[type="radio"][data-model-id]');
+    const modelIdInput = document.getElementById('model_id');
+    
+    radios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                modelIdInput.value = this.dataset.modelId;
+            }
+        });
+    });
+    
+    // 초기값 설정
+    const checkedRadio = document.querySelector('input[type="radio"]:checked');
+    if (checkedRadio) {
+        modelIdInput.value = checkedRadio.dataset.modelId;
+    }
+});
+</script>
+{% endblock %}

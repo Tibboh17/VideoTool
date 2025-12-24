@@ -1,0 +1,272 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}{{ model.display_name|default:model.name }} - 모델 상세{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'modelhub:model_list' %}">모델 허브</a></li>
+                <li class="breadcrumb-item active">{{ model.display_name|default:model.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- 모델 정보 -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cpu-fill"></i> 
+                        {{ model.display_name|default:model.name }}
+                    </h5>
+                    <div>
+                        {% if model.is_active %}
+                        <span class="badge bg-success">활성화</span>
+                        {% else %}
+                        <span class="badge bg-secondary">비활성화</span>
+                        {% endif %}
+                        
+                        {% if model_type == 'base' %}
+                        <span class="badge bg-warning">기본 모델</span>
+                        {% else %}
+                        <span class="badge bg-info">커스텀 모델</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- 모델 정보 -->
+                    <div class="col-md-8">
+                        <h6 class="mb-3">모델 정보</h6>
+                        <table class="table table-borderless">
+                            {% if model_type == 'base' %}
+                            <tr>
+                                <th width="150">표시 이름:</th>
+                                <td>{{ model.display_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>YOLO 버전:</th>
+                                <td><span class="badge bg-primary">{{ model.yolo_version }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>모델 파일:</th>
+                                <td>
+                                    {% if model.model_file %}
+                                    <code>{{ model.model_file.name }}</code>
+                                    {% else %}
+                                    <span class="text-muted">기본 경로 사용</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <th width="150">모델 이름:</th>
+                                <td>{{ model.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>프레임워크:</th>
+                                <td><span class="badge bg-info">{{ model.framework }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>정확도:</th>
+                                <td>
+                                    {% if model.accuracy %}
+                                    <span class="text-success">{{ model.accuracy }}%</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>모델 파일:</th>
+                                <td><code>{{ model.model_file.name }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>파일 크기:</th>
+                                <td>{{ model.file_size|filesizeformat }}</td>
+                            </tr>
+                            {% endif %}
+                            
+                            <tr>
+                                <th>사용 횟수:</th>
+                                <td><span class="badge bg-primary">{{ model.usage_count }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>생성일:</th>
+                                <td>{{ model.created_at|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% if model.description %}
+                            <tr>
+                                <th>설명:</th>
+                                <td>{{ model.description }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    
+                    <!-- 통계 -->
+                    <div class="col-md-4">
+                        <h6 class="mb-3">사용 통계</h6>
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">총 탐지 횟수</h6>
+                                <h2 class="text-primary">{{ detections.count }}</h2>
+                            </div>
+                        </div>
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h6 class="text-muted">완료된 탐지</h6>
+                                <h2 class="text-success">{{ completed_count }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 버튼 -->
+                <div class="d-flex gap-2 mt-3 pt-3 border-top">
+                    <a href="{% url 'modelhub:model_edit' model_type model.id %}" 
+                       class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> 수정
+                    </a>
+                    <form method="post" action="{% url 'modelhub:model_toggle' model_type model.id %}" class="d-inline">
+                        {% csrf_token %}
+                        {% if model.is_active %}
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="bi bi-pause-circle"></i> 비활성화
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-play-circle"></i> 활성화
+                        </button>
+                        {% endif %}
+                    </form>
+                    <a href="{% url 'modelhub:model_delete' model_type model.id %}" 
+                       class="btn btn-danger">
+                        <i class="bi bi-trash"></i> 삭제
+                    </a>
+                    <a href="{% url 'modelhub:model_list' %}" 
+                       class="btn btn-outline-secondary ms-auto">
+                        <i class="bi bi-arrow-left"></i> 목록으로
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 탐지 결과 목록 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> 이 모델을 사용한 탐지 결과</h5>
+            </div>
+            <div class="card-body">
+                {% if detections %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>제목</th>
+                                <th>미디어</th>
+                                <th>상태</th>
+                                <th>진행률</th>
+                                <th>탐지 수</th>
+                                <th>실행일</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detection in detections %}
+                            <tr>
+                                <td>{{ detection.id }}</td>
+                                <td>
+                                    <strong>{{ detection.title }}</strong>
+                                    {% if detection.description %}
+                                    <br><small class="text-muted">{{ detection.description|truncatewords:8 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if detection.analysis.video %}
+                                        {{ detection.analysis.video.title|truncatewords:5 }}
+                                    {% elif detection.analysis.image %}
+                                        {{ detection.analysis.image.title|truncatewords:5 }}
+                                    {% else %}
+                                        알 수 없음
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if detection.status == 'ready' %}
+                                    <span class="badge bg-secondary">대기</span>
+                                    {% elif detection.status == 'processing' %}
+                                    <span class="badge bg-warning">처리 중</span>
+                                    {% elif detection.status == 'completed' %}
+                                    <span class="badge bg-success">완료</span>
+                                    {% elif detection.status == 'failed' %}
+                                    <span class="badge bg-danger">실패</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="min-width: 80px;">
+                                        <div class="progress-bar 
+                                            {% if detection.status == 'completed' %}bg-success
+                                            {% elif detection.status == 'failed' %}bg-danger
+                                            {% endif %}" 
+                                             style="width: {{ detection.progress }}%">
+                                            {{ detection.progress }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if detection.total_detections > 0 %}
+                                    <span class="badge bg-primary">{{ detection.total_detections }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ detection.created_at|date:"Y-m-d H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% if detection.status == 'completed' %}
+                                    <a href="{% url 'vision_engine:detection_result' detection.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="결과 보기">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% elif detection.status == 'processing' %}
+                                    <a href="{% url 'vision_engine:detection_progress' detection.id %}" 
+                                       class="btn btn-sm btn-outline-warning"
+                                       title="진행 상황">
+                                        <i class="bi bi-hourglass-split"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h5 class="mt-3 text-muted">아직 이 모델을 사용한 탐지가 없습니다</h5>
+                    <p class="text-muted">분석이 완료된 미디어에서 이 모델로 객체 탐지를 시작하세요.</p>
+                    <a href="{% url 'video_list' %}" class="btn btn-primary">
+                        <i class="bi bi-film"></i> 미디어 목록으로
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

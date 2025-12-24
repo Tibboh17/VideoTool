@@ -98,16 +98,17 @@
     <div class="card-body">
         <div class="d-grid gap-2 d-md-flex justify-content-md-center">
             {% if analysis.status == 'completed' %}
-            <a href="{% url 'start_detection' analysis.id %}" class="btn btn-primary px-4" style="border-radius: 8px;">
-                <i class="bi bi-cpu"></i> 모델 적용
+            <!-- ✅ vision_engine으로 변경 -->
+            <a href="{% url 'vision_engine:select_model' analysis.id %}" class="btn btn-primary px-4" style="border-radius: 8px;">
+                <i class="bi bi-cpu-fill"></i> 객체 탐지 시작
             </a>
             {% else %}
             <button class="btn btn-secondary px-4" disabled title="분석이 완료되어야 합니다" style="border-radius: 8px;">
-                <i class="bi bi-cpu"></i> 모델 적용
+                <i class="bi bi-cpu-fill"></i> 객체 탐지 시작
             </button>
             {% endif %}
             
-            <a href="{% url 'start_analysis' media.id %}" class="btn btn-warning px-4" style="border-radius: 8px;">
+            <a href="{% url 'start_analysis' media.id %}?type={{ media_type }}" class="btn btn-warning px-4" style="border-radius: 8px;">
                 <i class="bi bi-arrow-counterclockwise"></i> 다시 전처리하기
             </a>
             
@@ -118,6 +119,9 @@
         </div>
     </div>
 </div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
 <script>
 // media_type 변수를 JS에서 인식하도록 설정
@@ -139,7 +143,7 @@ if (mediaType === 'video') {
         processedVideo.load();
         
         processedVideo.addEventListener('loadstart', function() {
-            console.log('📥 loadstart');
+            console.log('🔥 loadstart');
         });
         
         processedVideo.addEventListener('loadedmetadata', function() {
@@ -174,11 +178,11 @@ if (mediaType === 'video') {
         });
         
         processedVideo.addEventListener('stalled', function() {
-            console.warn('⚠️  stalled - 로딩 멈춤');
+            console.warn('⚠️ stalled - 로딩 멈춤');
         });
         
         processedVideo.addEventListener('suspend', function() {
-            console.log('⏸️  suspend - 로딩 일시중단');
+            console.log('⏸️ suspend - 로딩 일시중단');
         });
         
         processedVideo.addEventListener('error', function(e) {
@@ -188,7 +192,6 @@ if (mediaType === 'video') {
             console.error('Network state:', processedVideo.networkState);
             console.error('Ready state:', processedVideo.readyState);
             
-            // 이미지 모드일 때는 에러 알람을 띄우지 않도록 체크
             if (mediaType === 'video') {
                 alert('동영상 로드 실패! F12 콘솔을 확인하세요.');
             }

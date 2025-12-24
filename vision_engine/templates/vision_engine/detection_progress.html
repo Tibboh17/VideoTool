@@ -1,0 +1,157 @@
+{% extends 'videos/base.html' %}
+
+{% block title %}탐지 진행 중 - {{ detection.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'vision_engine:detection_list' %}">탐지 목록</a></li>
+                <li class="breadcrumb-item active">진행 상황</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> 객체 탐지 진행 중</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">{{ detection.title }}</h6>
+                
+                <!-- 진행률 표시 -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>진행률</span>
+                        <span><strong id="progress-text">{{ detection.progress }}%</strong></span>
+                    </div>
+                    <div class="progress" style="height: 30px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ detection.progress }}%"
+                             aria-valuenow="{{ detection.progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ detection.progress }}%
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 상태 정보 -->
+                <div class="row text-center mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-1">상태</h6>
+                                <h5 id="status-badge">
+                                    {% if detection.status == 'processing' %}
+                                    <span class="badge bg-warning">처리 중</span>
+                                    {% elif detection.status == 'completed' %}
+                                    <span class="badge bg-success">완료</span>
+                                    {% elif detection.status == 'failed' %}
+                                    <span class="badge bg-danger">실패</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">대기</span>
+                                    {% endif %}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-1">처리 프레임</h6>
+                                <h5 id="frames-text">
+                                    <span id="processed-frames">{{ detection.processed_frames }}</span> / 
+                                    <span id="total-frames">{{ detection.total_frames }}</span>
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="text-muted mb-1">사용 모델</h6>
+                                <h5>
+                                    <span class="badge bg-info">{{ detection.get_model_name }}</span>
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 에러 메시지 -->
+                <div id="error-container" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle"></i> 오류 발생</h6>
+                        <p id="error-message"></p>
+                    </div>
+                </div>
+                
+                <!-- 버튼 -->
+                <div class="d-grid gap-2">
+                    <a href="{% url 'vision_engine:detection_result' detection.id %}" 
+                       id="result-btn" 
+                       class="btn btn-success btn-lg" 
+                       style="display: none;">
+                        <i class="bi bi-check-circle"></i> 결과 보기
+                    </a>
+                    <a href="{% url 'vision_engine:detection_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i> 목록으로
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let detectionId = {{ detection.id }};
+let pollInterval;
+
+function updateProgress() {
+    fetch(`/vision/{{ detection.id }}/status/`)
+        .then(response => response.json())
+        .then(data => {
+            // 진행률 업데이트
+            document.getElementById('progress-text').textContent = data.progress + '%';
+            document.getElementById('progress-bar').style.width = data.progress + '%';
+            document.getElementById('progress-bar').textContent = data.progress + '%';
+            document.getElementById('progress-bar').setAttribute('aria-valuenow', data.progress);
+            
+            // 프레임 수 업데이트
+            document.getElementById('processed-frames').textContent = data.processed_frames;
+            document.getElementById('total-frames').textContent = data.total_frames;
+            
+            // 상태 업데이트
+            let statusBadge = document.getElementById('status-badge');
+            if (data.status === 'completed') {
+                statusBadge.innerHTML = '<span class="badge bg-success">완료</span>';
+                document.getElementById('result-btn').style.display = 'block';
+                clearInterval(pollInterval);
+            } else if (data.status === 'failed') {
+                statusBadge.innerHTML = '<span class="badge bg-danger">실패</span>';
+                document.getElementById('error-container').style.display = 'block';
+                document.getElementById('error-message').textContent = data.error_message;
+                clearInterval(pollInterval);
+            } else if (data.status === 'processing') {
+                statusBadge.innerHTML = '<span class="badge bg-warning">처리 중</span>';
+            }
+        })
+        .catch(error => {
+            console.error('상태 업데이트 오류:', error);
+        });
+}
+
+// 2초마다 상태 업데이트
+pollInterval = setInterval(updateProgress, 2000);
+
+// 페이지 로드 시 즉시 업데이트
+updateProgress();
+</script>
+{% endblock %}

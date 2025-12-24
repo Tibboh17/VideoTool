@@ -4,11 +4,9 @@ from . import views
 
 urlpatterns = [
     # 통합 미디어 목록
-    path('', views.MediaListView.as_view(), name='video_list'),  # 호환성
     path('', views.MediaListView.as_view(), name='media_list'),
     
     # 통합 업로드
-    path('upload/', views.MediaUploadView.as_view(), name='video_upload'),  # 호환성
     path('upload/', views.MediaUploadView.as_view(), name='upload_media'),
     
     # 동영상 관련

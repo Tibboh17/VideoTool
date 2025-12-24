@@ -3,6 +3,28 @@
 {% block title %}이미지 업로드{% endblock %}
 
 {% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item">
+                        <a href="{% url 'media_list' %}">
+                            <i class="bi bi-collection-play"></i> 미디어 목록
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active">
+                        <a href="{% url 'upload_media' %}">
+                            <i class="bi bi-image"></i> 이미지 업로드
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card shadow-sm">

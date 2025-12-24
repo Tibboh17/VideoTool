@@ -3,6 +3,7 @@
 {% block title %}미디어 관리{% endblock %}
 
 {% block content %}
+<<<<<<< Updated upstream
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
@@ -15,9 +16,27 @@
             <a href="{% url 'upload_media' %}?type=image" class="btn btn-success">
                 <i class="bi bi-image"></i> 이미지 업로드
             </a>
+=======
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item active" >
+                        <a href="{% url 'media_list' %}">
+                            <i class="bi bi-collection-play"></i> 미디어 목록
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+>>>>>>> Stashed changes
         </div>
     </div>
+</div>
 
+
+<div class="container-fluid">
     <!-- 탭과 검색 -->
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body p-2 p-md-3">
@@ -57,7 +76,11 @@
                 <div class="flex-grow-1"></div>
 
                 <!-- 검색 -->
+<<<<<<< Updated upstream
                 <form method="get" class="d-flex gap-1 flex-shrink-0" style="width: 250px;">
+=======
+                <form method="get" class="d-flex gap-1 flex-shrink-0 me-2" style="width: 250px;">
+>>>>>>> Stashed changes
                     <input type="hidden" name="tab" value="{{ tab }}">
                     <input type="text" name="search" class="form-control form-control-sm" 
                         placeholder="검색..." value="{{ search }}">
@@ -65,6 +88,19 @@
                         <i class="bi bi-search"></i>
                     </button>
                 </form>
+<<<<<<< Updated upstream
+=======
+                
+                <!-- 업로드 버튼 -->
+                <div class="btn-group d-flex gap-2" role="group">
+                    <a href="{% url 'upload_media' %}?type=video" class="btn btn-primary">
+                        <i class="bi bi-plus-lg"></i> 동영상 업로드
+                    </a>
+                    <a href="{% url 'upload_media' %}?type=image" class="btn btn-success">
+                        <i class="bi bi-plus-lg"></i> 이미지 업로드
+                    </a>
+                </div>
+>>>>>>> Stashed changes
             </div>
         </div>
     </div>

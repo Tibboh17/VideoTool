@@ -3,6 +3,7 @@
 {% block title %}탐지 결과 - {{ detection.title }}{% endblock %}
 
 {% block content %}
+<<<<<<< Updated upstream
 <div class="row">
     <div class="col-md-12">
         <nav aria-label="breadcrumb">
@@ -16,12 +17,47 @@
 </div>
 
 <div class="row mb-3">
+=======
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item">
+                        <a href="{% url 'media_list' %}">
+                            <i class="bi bi-collection-play"></i> 미디어 목록
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item">
+                        <a href="{% url 'vision_engine:detection_list' %}">
+                            <i class="bi bi-search me-1"></i> 탐지 작업
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active">
+                        <a href="{% url 'vision_engine:detection_result' detection.id %}">
+                            <i class="bi bi-clipboard-data"></i> 탐지 결과
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+<!-- <div class="row mb-3">
+>>>>>>> Stashed changes
     <div class="col-md-12">
         <div class="alert alert-success border-0 shadow-sm">
             <h5 class="mb-0"><i class="bi bi-check-circle-fill"></i> 객체 탐지 완료!</h5>
         </div>
     </div>
+<<<<<<< Updated upstream
 </div>
+=======
+</div> -->
+>>>>>>> Stashed changes
 
 <div class="row">
     <!-- 원본 -->
@@ -195,9 +231,19 @@
                        class="btn btn-outline-secondary px-4">
                         <i class="bi bi-arrow-left"></i> 분석 결과로
                     </a>
+<<<<<<< Updated upstream
                     <a href="{% url 'vision_engine:detection_list' %}" 
                        class="btn btn-outline-secondary px-4">
                         <i class="bi bi-list"></i> 탐지 목록
+=======
+                    <a href="{% url 'media_list' %}" 
+                       class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-list"></i> 미디어 목록으로
+                    </a>
+                    <a href="{% url 'vision_engine:detection_list' %}" 
+                       class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-list"></i> 탐지 목록으로
+>>>>>>> Stashed changes
                     </a>
                 </div>
             </div>

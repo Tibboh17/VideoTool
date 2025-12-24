@@ -3,12 +3,34 @@
 {% block title %}{{ video.title }}{% endblock %}
 
 {% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item">
+                        <a href="{% url 'media_list' %}">
+                            <i class="bi bi-collection-play"></i> 미디어 목록
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active">
+                        <a href="{% url 'video_detail' video.id %}">
+                            <i class="bi bi-camera-video"></i> 동영상 상세
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
 <div class="container">
-    <h1 class="mb-4">동영상 상세</h1>
     
     <!-- 동영상 정보 카드 -->
     <div class="card mb-4">
         <div class="card-body">
+<<<<<<< Updated upstream
             <h5 class="card-title">{{ video.title }}</h5>
             <p class="card-text">
                 <strong>파일명:</strong> {{ video.file.name }}<br>
@@ -18,6 +40,33 @@
             {% if video.description %}
             <p class="card-text">{{ video.description }}</p>
             {% endif %}
+=======
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="card-title">{{ video.title }}</h5>
+                    <p class="card-text">
+                        <span class="badge bg-primary">
+                            <i class="bi bi-camera-video"></i> 동영상
+                        </span>
+                    </p>
+                    <p class="text-muted small">
+                        <i class="bi bi-hdd"></i> {{ video.get_file_size_display }} |
+                        <i class="bi bi-calendar"></i> {{ video.uploaded_at|date:"Y-m-d H:i" }}
+                    </p>
+                </div>
+                <div class="btn-group" role="group">
+                    <!-- <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 목록
+                    </a> -->
+                    <a href="{{ video.file.url }}" download class="btn btn-outline-success">
+                        <i class="bi bi-download"></i> 다운로드
+                    </a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteVideoModal">
+                        <i class="bi bi-trash"></i> 삭제
+                    </button>
+                </div>
+            </div>
+>>>>>>> Stashed changes
         </div>
     </div>
 
@@ -257,7 +306,14 @@
                 <a href="{% url 'start_analysis' video.id %}" class="btn btn-primary">
                     <i class="bi bi-play-circle"></i> 새 분석 시작
                 </a>
+<<<<<<< Updated upstream
                 <a href="{% url 'video_list' %}" class="btn btn-outline-secondary">
+=======
+                <!-- <a href="{{ video.file.url }}" download class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> 다운로드
+                </a> -->
+                <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
+>>>>>>> Stashed changes
                     <i class="bi bi-list"></i> 목록으로
                 </a>
                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteVideoModal">

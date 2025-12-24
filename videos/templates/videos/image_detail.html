@@ -3,9 +3,31 @@
 {% block title %}{{ image.title }}{% endblock %}
 
 {% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item">
+                        <a href="{% url 'media_list' %}">
+                            <i class="bi bi-collection-play"></i> 미디어 목록
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active">
+                        <a href="{% url 'image_detail' image.id %}">
+                            <i class="bi bi-image"></i> 이미지 상세
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
 <div class="container">
-    <h1 class="mb-4">이미지 상세</h1>
-    
+    <!-- <h1 class="mb-4">이미지 상세</h1> -->
+
     <!-- 이미지 정보 카드 -->
     <div class="card mb-4">
         <div class="card-body">
@@ -24,8 +46,11 @@
                     </p>
                 </div>                
                 <div class="btn-group" role="group">
-                    <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
+                    <!-- <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> 목록
+                    </a> -->
+                    <a href="{{ image.file.url }}" download class="btn btn-outline-success">
+                        <i class="bi bi-download"></i> 다운로드
                     </a>
                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                         <i class="bi bi-trash"></i> 삭제
@@ -283,9 +308,9 @@
                 <a href="{% url 'start_analysis' image.id %}?type=image" class="btn btn-primary">
                     <i class="bi bi-play-circle"></i> 새 분석 시작
                 </a>
-                <a href="{{ image.file.url }}" download class="btn btn-outline-success">
+                <!-- <a href="{{ image.file.url }}" download class="btn btn-outline-success">
                     <i class="bi bi-download"></i> 다운로드
-                </a>
+                </a> -->
                 <a href="{% url 'media_list' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-list"></i> 목록으로
                 </a>

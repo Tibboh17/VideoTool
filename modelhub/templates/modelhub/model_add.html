@@ -3,6 +3,7 @@
 {% block title %}모델 추가{% endblock %}
 
 {% block content %}
+<<<<<<< Updated upstream
 <div class="container">
     <div class="row mb-4">
         <div class="col-md-12">
@@ -12,6 +13,31 @@
             <p class="text-muted">추가할 모델 타입을 선택하세요</p>
         </div>
     </div>
+=======
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="custom-breadcrumb">
+                    <li class="custom-breadcrumb-item" >
+                        <a href="{% url 'modelhub:model_list' %}">
+                            <i class="bi bi-box-seam"></i> 모델 허브
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active" >
+                        <a href="{% url 'modelhub:model_add'%}">
+                            <i class="bi bi-plus-circle"></i> 모델 추가
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+>>>>>>> Stashed changes
 
     <div class="row">
         <!-- 기본 모델 추가 -->
@@ -81,7 +107,11 @@
 
     <div class="text-center mt-3">
         <a href="{% url 'modelhub:model_list' %}" class="btn btn-secondary">
+<<<<<<< Updated upstream
             <i class="bi bi-arrow-left"></i> 목록으로 돌아가기
+=======
+            <i class="bi bi-list"></i> 목록으로
+>>>>>>> Stashed changes
         </a>
     </div>
 </div>

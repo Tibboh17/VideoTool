@@ -2,25 +2,6 @@
 
 {% block title %}모델 선택 - {{ analysis.video.title }}{% endblock %}
 
-<<<<<<< Updated upstream
-{% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-<<<<<<< Updated upstream
-                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
-=======
-                <li class="breadcrumb-item"><a href="{% url 'media_list' %}">홈</a></li>
->>>>>>> Stashed changes
-                <li class="breadcrumb-item"><a href="{% url 'analysis_result' analysis.id %}">분석 결과</a></li>
-                <li class="breadcrumb-item active">모델 선택</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
-=======
 {% block breadcrumb_items %}
 <!-- 2단계: 미디어 상세 -->
 <li class="custom-breadcrumb-item">
@@ -51,7 +32,6 @@
 {% endblock %}
 
 {% block content %}
->>>>>>> Stashed changes
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card border-0 shadow-sm">

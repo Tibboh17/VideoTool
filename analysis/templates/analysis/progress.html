@@ -172,17 +172,12 @@ function updateProgress() {
                 const completeBtn = document.getElementById('completeBtn');
                 completeBtn.style.display = 'block';
                 
-                if (mediaType === 'video') {
-                    completeBtn.onclick = function() {
-                        window.location.href = `/analysis/${analysisId}/result/`;
-                    };
-                } else {
-                    completeBtn.onclick = function() {
-                        window.location.href = `/videos/image/${mediaId}/`;
-                    };
-                }
+                completeBtn.onclick = function() {
+                    window.location.href = `/analysis/${analysisId}/result/`;
+                };
                 
                 document.getElementById('progressBar').classList.remove('progress-bar-animated');
+            
             } else if (data.status === 'failed') {
                 clearInterval(pollInterval);
                 

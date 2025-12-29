@@ -2,24 +2,43 @@
 
 {% block title %}미디어 관리{% endblock %}
 
-{% block breadcrumb %}
-<div class="row">
-            <div class="col-md-12">
-                <div class="breadcrumb-container">
-                    <nav aria-label="breadcrumb">
-                        <ol class="custom-breadcrumb">
-                            <!-- 홈 (항상 표시) -->
-                            <li class="custom-breadcrumb-item active">
-                                <a href="{% url 'media_list' %}">
-                                    <i class="bi bi-collection-play"></i> 미디어 목록
-                                </a>
-                            </li>
-                            
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-        </div>
+{% block breadcrumb_items %}
+    <!-- 나머지 단계들은 모두 비활성화 -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-file-earmark"></i> 미디어 상세
+        </span>
+    </li>
+
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-layers-half"></i> 전처리
+        </span>
+    </li>
+
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-clipboard-data"></i> 전처리 결과
+        </span>
+    </li>
+
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-cpu-fill"></i> 모델 선택
+        </span>
+    </li>
+
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-play-circle-fill"></i> 탐지 실행
+        </span>
+    </li>
+
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-clipboard-data"></i> 탐지 결과
+        </span>
+    </li>
 {% endblock %}
 
 

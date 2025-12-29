@@ -154,9 +154,15 @@
                         {% if not current_pipeline %}disabled{% endif %}>
                         전처리 실행
                     </button>
-                    <a href="{% url 'video_detail' video.pk %}" class="btn btn-outline-secondary">
-                        취소
-                    </a>
+                    {% if media_type == 'image' %}
+                        <a href="{% url 'image_detail' media.pk %}" class="btn btn-outline-secondary">
+                            취소
+                        </a>
+                    {% else %}
+                        <a href="{% url 'video_detail' media.pk %}" class="btn btn-outline-secondary">
+                            취소
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

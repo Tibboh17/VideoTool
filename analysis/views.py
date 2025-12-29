@@ -15,6 +15,8 @@ from django.http import (
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.views.generic import DeleteView
 from wsgiref.util import FileWrapper
 
@@ -120,19 +122,154 @@ class AddPreprocessingStepView(View):
 
 
 class RemovePreprocessingStepView(View):
+    """전처리 단계 제거 (특정 인덱스 지원)"""
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
     def post(self, request, analysis_id):
-        analysis = get_object_or_404(Analysis, id=analysis_id)
-        analysis.remove_last_preprocessing_step()
+        try:
+            analysis = Analysis.objects.get(id=analysis_id)
+            
+            # JSON 데이터 파싱
+            data = json.loads(request.body)
+            index = data.get('index')
+            
+            pipeline = analysis.preprocessing_pipeline or []
+            
+            if index is not None:
+                # 특정 인덱스 삭제
+                if 0 <= index < len(pipeline):
+                    pipeline.pop(index)
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': '잘못된 인덱스입니다.'
+                    })
+            else:
+                # 인덱스가 없으면 마지막 항목 삭제 (하위 호환성)
+                if pipeline:
+                    pipeline.pop()
+            
+            analysis.preprocessing_pipeline = pipeline
+            analysis.save()
+            
+            # 읽기 쉬운 형태로 변환
+            readable_pipeline = []
+            for step in pipeline:
+                step_type = step.get('type', '')
+                method_name = analysis.get_preprocessing_method_name(step_type)
+                readable_pipeline.append(method_name)
+            
+            return JsonResponse({
+                'success': True,
+                'pipeline': readable_pipeline
+            })
+            
+        except Analysis.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '분석을 찾을 수 없습니다.'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
 
-        return JsonResponse({
-            'success': True,
-            'pipeline': analysis.get_pipeline_display(),
-            'pipeline_full': analysis.preprocessing_pipeline,
-        })
 
-    def get(self, request, analysis_id):
-        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)
+class ReorderPreprocessingStepView(View):
+    """전처리 단계 순서 변경"""
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def post(self, request, analysis_id):
+        try:
+            analysis = Analysis.objects.get(id=analysis_id)
+            
+            # JSON 데이터 파싱
+            data = json.loads(request.body)
+            from_index = data.get('from_index')
+            to_index = data.get('to_index')
+            
+            if from_index is None or to_index is None:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'from_index와 to_index가 필요합니다.'
+                })
+            
+            pipeline = analysis.preprocessing_pipeline or []
+            
+            # 인덱스 유효성 검사
+            if not (0 <= from_index < len(pipeline) and 0 <= to_index < len(pipeline)):
+                return JsonResponse({
+                    'success': False,
+                    'error': '잘못된 인덱스입니다.'
+                })
+            
+            # 순서 변경
+            item = pipeline.pop(from_index)
+            pipeline.insert(to_index, item)
+            
+            analysis.preprocessing_pipeline = pipeline
+            analysis.save()
+            
+            # 읽기 쉬운 형태로 변환
+            readable_pipeline = []
+            for step in pipeline:
+                step_type = step.get('type', '')
+                method_name = analysis.get_preprocessing_method_name(step_type)
+                readable_pipeline.append(method_name)
+            
+            return JsonResponse({
+                'success': True,
+                'pipeline': readable_pipeline
+            })
+            
+        except Analysis.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '분석을 찾을 수 없습니다.'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
 
+class ClearPipelineView(View):
+    """전처리 파이프라인 전체 초기화"""
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def post(self, request, analysis_id):
+        try:
+            analysis = Analysis.objects.get(id=analysis_id)
+            
+            # 파이프라인 초기화
+            analysis.preprocessing_pipeline = []
+            analysis.save()
+            
+            return JsonResponse({
+                'success': True,
+                'pipeline': []
+            })
+            
+        except Analysis.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '분석을 찾을 수 없습니다.'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
 
 class ExecuteAnalysisView(View):
     def post(self, request, analysis_id):

@@ -100,11 +100,11 @@
             </div>
 
             <!-- 현재 단계 (있으면) -->
-            {% if analysis.current_step %}
+            <!-- {% if analysis.current_step %}
             <div class="alert alert-info">
                 <i class="bi bi-arrow-right-circle"></i> {{ analysis.current_step }}
             </div>
-            {% endif %}
+            {% endif %} -->
 
             <!-- 에러 메시지 -->
             <div id="errorContainer" style="display: {% if analysis.status == 'failed' %}block{% else %}none{% endif %};">
@@ -116,7 +116,8 @@
 
             <!-- 버튼 -->
             <div class="d-grid gap-2 mt-4">
-                <button id="completeBtn" class="btn btn-success btn-lg" style="display: {% if analysis.status == 'completed' %}block{% else %}none{% endif %};">
+                <button id="completeBtn" class="btn btn-success btn-lg" 
+                        {% if analysis.status != 'completed' %}disabled{% endif %}>
                     <i class="bi bi-check-circle"></i> 결과 보기
                 </button>
                 
@@ -170,14 +171,15 @@ function updateProgress() {
                 clearInterval(pollInterval);
                 
                 const completeBtn = document.getElementById('completeBtn');
-                completeBtn.style.display = 'block';
+                // ⭐ 버튼 활성화
+                completeBtn.disabled = false;
                 
+                // 클릭 이벤트 추가
                 completeBtn.onclick = function() {
                     window.location.href = `/analysis/${analysisId}/result/`;
                 };
                 
                 document.getElementById('progressBar').classList.remove('progress-bar-animated');
-            
             } else if (data.status === 'failed') {
                 clearInterval(pollInterval);
                 

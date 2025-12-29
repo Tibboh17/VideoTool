@@ -3,7 +3,7 @@
 {% block title %}탐지 결과 - {{ detection.title }}{% endblock %}
 
 {% block breadcrumb_items %}
-    <!-- 2단계: 미디어 상세 -->
+    <!-- 1단계: 미디어 상세 (완료) -->
     <li class="custom-breadcrumb-item">
         {% if detection.analysis.video %}
         <a href="{% url 'video_detail' detection.analysis.video.id %}">
@@ -16,33 +16,46 @@
         {% endif %}
     </li>
 
-    <!-- 3단계: 분석 결과 -->
+    <!-- 2단계: 전처리 (완료) -->
+    <li class="custom-breadcrumb-item">
+        {% if detection.analysis.video %}
+        <a href="{% url 'start_analysis' detection.analysis.video.id %}">
+            <i class="bi bi-layers-half"></i> 전처리
+        </a>
+        {% elif detection.analysis.image %}
+        <a href="{% url 'start_analysis' detection.analysis.image.id %}">
+            <i class="bi bi-layers-half"></i> 전처리
+        </a>
+        {% endif %}
+    </li>
+
+    <!-- 3단계: 전처리 결과 (완료) -->
     <li class="custom-breadcrumb-item">
         <a href="{% url 'analysis_result' detection.analysis.id %}">
             <i class="bi bi-clipboard-data"></i> 전처리 결과
         </a>
     </li>
 
-    <!-- 4단계: 모델 선택 -->
+    <!-- 4단계: 모델 선택 (완료) -->
     <li class="custom-breadcrumb-item">
         <a href="{% url 'vision_engine:select_model' detection.analysis.id %}">
             <i class="bi bi-cpu-fill"></i> 모델 선택
         </a>
     </li>
 
-    <!-- 5단계: 현재 페이지 -->
+    <!-- 5단계: 탐지 실행 (완료) -->
     <li class="custom-breadcrumb-item">
-        <a href="#">
-            <i class="bi bi-play-circle-fill"></i> 탐지 실행
-        </a>
+        <i class="bi bi-play-circle-fill"></i> 탐지 실행
     </li>
 
+    <!-- 6단계: 탐지 결과 (현재 - 활성화) -->
     <li class="custom-breadcrumb-item active">
         <a href="{% url 'vision_engine:detection_result' detection.id %}">
             <i class="bi bi-clipboard-data"></i> 탐지 결과
         </a>
     </li>
 {% endblock %}
+
 
 
 {% block content %}

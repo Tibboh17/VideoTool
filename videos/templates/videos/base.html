@@ -16,52 +16,60 @@
             object-fit: cover;
         }
 
-        .breadcrumb-container {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 10px 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid #f0f0f0;
-            margin-top: 0px;
-            margin-bottom: 30px;
-        }
-
-        .custom-breadcrumb {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0;
-            list-style: none;
-            padding: 0;
-        }
-
+        /* 브레드크럼 스타일 */
         .custom-breadcrumb-item {
-            font-size: 0.95rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
+            display: inline-block;
+            position: relative;
+            padding: 0.5rem 1rem;
         }
 
-        .custom-breadcrumb-item a {
-            color: #6c757d;
+        /* 활성화된 단계 (현재 페이지) */
+        .custom-breadcrumb-item.active a {
+            color: #0d6efd;
+            font-weight: bold;
+            background-color: #e7f1ff;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        /* 완료된 단계 (클릭 가능) */
+        .custom-breadcrumb-item:not(.active):not(.disabled) a {
+            color: #198754;
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
 
-        .custom-breadcrumb-item a:hover {
-            color: #0d6efd; 
+        .custom-breadcrumb-item:not(.active):not(.disabled) a:hover {
+            color: #0a58ca;
+            text-decoration: underline;
         }
 
-        .custom-breadcrumb-item.active {
-            color: #212529;
-            font-weight: 700;
-        }
-
-        .custom-breadcrumb-item + .custom-breadcrumb-item::before {
-            content: "\F285"; /* Bootstrap Icons의 '>' 아이콘 코드 */
-            font-family: "bootstrap-icons";
-            margin: 0 12px;
+        /* 비활성화된 단계 (아직 안 감) */
+        .custom-breadcrumb-item.disabled span {
             color: #adb5bd;
-            font-size: 0.8rem;
+            cursor: not-allowed;
+        }
+
+        /* 화살표 추가 */
+        .custom-breadcrumb-item:not(:last-child)::after {
+            content: '›';
+            margin-left: 0.5rem;
+            color: #6c757d;
+        }
+
+        /* 반응형 - 작은 화면에서는 세로 정렬 */
+        @media (max-width: 768px) {
+            .custom-breadcrumb-item {
+                display: block;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .custom-breadcrumb-item:not(:last-child)::after {
+                content: '↓';
+                display: block;
+                margin-left: 0;
+                text-align: center;
+            }
         }
     </style>
 </head>

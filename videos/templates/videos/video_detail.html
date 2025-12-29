@@ -3,10 +3,52 @@
 {% block title %}{{ video.title }}{% endblock %}
 
 {% block breadcrumb_items %}
+    <!-- 1단계: 현재 페이지 (활성화) -->
     <li class="custom-breadcrumb-item active">
+        {% if video %}
         <a href="{% url 'video_detail' video.id %}">
             <i class="bi bi-camera-video"></i> 동영상 상세
         </a>
+        {% else %}
+        <a href="{% url 'image_detail' image.id %}">
+            <i class="bi bi-image"></i> 이미지 상세
+        </a>
+        {% endif %}
+    </li>
+
+    <!-- 2단계: 전처리 (비활성화 - 아직 안 감) -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-layers-half"></i> 전처리
+        </span>
+    </li>
+
+    <!-- 3단계: 전처리 결과 (비활성화) -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-clipboard-data"></i> 전처리 결과
+        </span>
+    </li>
+
+    <!-- 4단계: 모델 선택 (비활성화) -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-cpu-fill"></i> 모델 선택
+        </span>
+    </li>
+
+    <!-- 5단계: 탐지 실행 (비활성화) -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-play-circle-fill"></i> 탐지 실행
+        </span>
+    </li>
+
+    <!-- 6단계: 탐지 결과 (비활성화) -->
+    <li class="custom-breadcrumb-item disabled">
+        <span class="text-muted">
+            <i class="bi bi-clipboard-data"></i> 탐지 결과
+        </span>
     </li>
 {% endblock %}
 

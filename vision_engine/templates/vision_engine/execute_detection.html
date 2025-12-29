@@ -2,25 +2,6 @@
 
 {% block title %}탐지 실행 - {{ detection.title }}{% endblock %}
 
-<<<<<<< Updated upstream
-{% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-<<<<<<< Updated upstream
-                <li class="breadcrumb-item"><a href="{% url 'video_list' %}">홈</a></li>
-=======
-                <li class="breadcrumb-item"><a href="{% url 'media_list' %}">홈</a></li>
->>>>>>> Stashed changes
-                <li class="breadcrumb-item"><a href="{% url 'vision_engine:detection_list' %}">탐지 목록</a></li>
-                <li class="breadcrumb-item active">탐지 실행</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
-=======
 {% block breadcrumb_items %}
 <!-- 2단계: 미디어 상세 -->
 <li class="custom-breadcrumb-item">
@@ -58,7 +39,6 @@
 {% endblock %}
 
 {% block content %}
->>>>>>> Stashed changes
 <div class="row">
     <div class="col-md-8 offset-md-2">
         <div class="card border-0 shadow-sm">

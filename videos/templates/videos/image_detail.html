@@ -11,33 +11,7 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="breadcrumb-container">
-            <nav aria-label="breadcrumb">
-                <ol class="custom-breadcrumb">
-                    <li class="custom-breadcrumb-item">
-                        <a href="{% url 'media_list' %}">
-                            <i class="bi bi-collection-play"></i> 미디어 목록
-                        </a>
-                    </li>
-                    <li class="custom-breadcrumb-item active">
-                        <a href="{% url 'image_detail' image.id %}">
-                            <i class="bi bi-image"></i> 이미지 상세
-                        </a>
-                    </li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-</div>
-
 <div class="container">
-<<<<<<< Updated upstream
-    <!-- <h1 class="mb-4">이미지 상세</h1> -->
-=======
->>>>>>> Stashed changes
 
     <!-- 이미지 정보 카드 -->
     <div class="card mb-4">
@@ -332,6 +306,29 @@
 
 <!-- 삭제 모달 (기존과 동일) -->
 <!-- ... -->
+
+<!-- 이미지 삭제 모달 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">이미지 삭제</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>정말로 이미지를 삭제하시겠습니까?</p>
+                <p class="text-danger"><strong>경고:</strong> 관련된 모든 분석 및 감지 결과도 함께 삭제됩니다.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <form method="post" action="{% url 'image_delete' image.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">삭제</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- 분석 삭제 모달 -->
 <div class="modal fade" id="deleteAnalysisModal" tabindex="-1">

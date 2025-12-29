@@ -47,7 +47,7 @@
 
 {% block content %}
 <div class="row">
-    <!-- 원본 -->
+    <!-- 원본 (전처리된 비디오) -->
     <div class="col-md-6 mb-3">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
@@ -61,22 +61,15 @@
             </div>
             <div class="card-body">
                 {% if detection.analysis.video %}
-                    <video width="100%" controls class="rounded video-thumbnail"
-                           data-bs-toggle="modal" 
-                           data-bs-target="#videoModal"
-                           data-video-src="{% url 'serve_analysis_video' detection.analysis.id %}"
-                           data-video-title="전처리된 비디오">
+                    <!-- ⭐ 간단하게 수정 -->
+                    <video width="100%" controls preload="metadata" class="rounded">
                         <source src="{% url 'serve_analysis_video' detection.analysis.id %}" type="video/mp4">
                         브라우저가 비디오 재생을 지원하지 않습니다.
                     </video>
                 {% else %}
                     <img src="{% url 'serve_analysis_image' detection.analysis.id %}" 
-                         class="img-fluid rounded img-thumbnail"
-                         alt="전처리된 이미지"
-                         data-bs-toggle="modal"
-                         data-bs-target="#imageModal"
-                         data-img-src="{% url 'serve_analysis_image' detection.analysis.id %}"
-                         data-img-title="전처리된 이미지">
+                        class="img-fluid rounded"
+                        alt="전처리된 이미지">
                 {% endif %}
             </div>
         </div>
@@ -88,27 +81,20 @@
             <div class="card-header bg-white">
                 <h6 class="mb-0">
                     <i class="bi bi-eye-fill"></i> 탐지 결과
+                </h6>
             </div>
             <div class="card-body">
                 {% if detection.output_video_path %}
                     {% if detection.analysis.video %}
-                        <!-- 비디오 결과 -->
-                        <video width="100%" controls class="rounded video-thumbnail"
-                               data-bs-toggle="modal"
-                               data-bs-target="#videoModal"
-                               data-video-src="/media/{{ detection.output_video_path }}"
-                               data-video-title="탐지 결과">
+                        <!-- ⭐ 비디오 결과 - 간단하게 -->
+                        <video width="100%" controls preload="metadata" class="rounded">
                             <source src="/media/{{ detection.output_video_path }}" type="video/mp4">
                         </video>
                     {% else %}
                         <!-- 이미지 결과 -->
                         <img src="/media/{{ detection.output_video_path }}" 
-                             class="img-fluid rounded img-thumbnail"
-                             alt="탐지 결과"
-                             data-bs-toggle="modal"
-                             data-bs-target="#imageModal"
-                             data-img-src="/media/{{ detection.output_video_path }}"
-                             data-img-title="탐지 결과">
+                            class="img-fluid rounded"
+                            alt="탐지 결과">
                     {% endif %}
                 {% else %}
                     <div class="alert alert-warning">
@@ -119,8 +105,8 @@
                 <div class="d-flex justify-content-end mt-3">
                     {% if detection.output_video_path %}
                     <a href="/media/{{ detection.output_video_path }}" 
-                       download 
-                       class="btn btn-success">
+                    download 
+                    class="btn btn-success">
                         <i class="bi bi-download"></i> 다운로드
                     </a>
                     {% endif %}
@@ -214,18 +200,14 @@
                        class="btn btn-primary px-4">
                         <i class="bi bi-arrow-repeat"></i> 다른 모델로 다시 탐지
                     </a>
-                    <a href="{% url 'analysis_result' detection.analysis.id %}" 
+                    <!-- <a href="{% url 'analysis_result' detection.analysis.id %}" 
                        class="btn btn-outline-secondary px-4">
-                        <i class="bi bi-arrow-left"></i> 분석 결과로
-                    </a>
+                        <i class="bi bi-arrow-left"></i> 전처리 결과로
+                    </a> -->
                     <a href="{% url 'media_list' %}" 
                        class="btn btn-outline-secondary px-4">
                         <i class="bi bi-list"></i> 목록으로
                     </a>
-                    <!-- <a href="{% url 'vision_engine:detection_list' %}" 
-                       class="btn btn-outline-secondary px-4">
-                        <i class="bi bi-list"></i> 탐지 목록으로
-                    </a> -->
                 </div>
             </div>
         </div>

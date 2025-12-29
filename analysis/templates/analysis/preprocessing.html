@@ -452,23 +452,25 @@ function updatePipelineDisplay(pipeline) {
         list.innerHTML = '<div class="text-muted" id="emptyMessage">전처리 없음</div>';
     } else {
         list.innerHTML = pipeline.map((step, index) => `
-            <div class="list-group-item d-flex justify-content-between align-items-center pipeline-item" data-index="${index}">
-                <div class="d-flex align-items-center flex-grow-1">
-                    <div class="drag-handle me-2" style="cursor: move;">
-                        <i class="bi bi-grip-vertical"></i>
+            <div class="list-group-item pipeline-item" data-index="${index}">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="d-flex align-items-center flex-grow-1 mb-2 mb-md-0">
+                        <div class="drag-handle me-2" style="cursor: move;">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+                        <span>${index + 1}. ${step}</span>
                     </div>
-                    <span>${index + 1}. ${step}</span>
-                </div>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary btn-sm move-up-btn" title="위로" ${index === 0 ? 'disabled' : ''}>
-                        <i class="bi bi-arrow-up"></i>
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm move-down-btn" title="아래로" ${index === pipeline.length - 1 ? 'disabled' : ''}>
-                        <i class="bi bi-arrow-down"></i>
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm delete-btn" title="삭제">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary btn-sm move-up-btn" title="위로" ${index === 0 ? 'disabled' : ''}>
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm move-down-btn" title="아래로" ${index === pipeline.length - 1 ? 'disabled' : ''}>
+                            <i class="bi bi-arrow-down"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm delete-btn" title="삭제">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -477,8 +479,7 @@ function updatePipelineDisplay(pipeline) {
         attachPipelineEventListeners();
     }
 }
-
-// ⭐ 파이프라인 아이템 이벤트 리스너 부착
+// 파이프라인 아이템 이벤트 리스너 부착
 function attachPipelineEventListeners() {
     // 삭제 버튼
     document.querySelectorAll('.delete-btn').forEach(btn => {

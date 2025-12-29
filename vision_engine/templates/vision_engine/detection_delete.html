@@ -1,3 +1,4 @@
+<!-- 방법 1: JavaScript로 이전 페이지로 이동 -->
 {% extends 'videos/base.html' %}
 
 {% block title %}탐지 삭제 - {{ detection.title }}{% endblock %}
@@ -65,7 +66,8 @@
                     </tr>
                 </table>
                 
-                <form method="post">
+                <!-- ⭐ 방법 1: JavaScript로 처리 -->
+                <form method="post" id="deleteForm">
                     {% csrf_token %}
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-danger">
@@ -80,4 +82,32 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('deleteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action || window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // 삭제 성공 시 이전 페이지로 이동 + 새로고침
+            window.location.href = document.referrer || "{% url 'vision_engine:detection_list' %}";
+        } else {
+            alert('삭제에 실패했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    });
+});
+</script>
 {% endblock %}

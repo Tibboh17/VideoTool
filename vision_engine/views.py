@@ -45,7 +45,7 @@ def select_model(request, analysis_id):
         
         detection.save()
         
-        messages.success(request, '탐지 작업이 생성되었습니다.')
+        # messages.success(request, '탐지 작업이 생성되었습니다.')
         return redirect('vision_engine:execute_detection', detection_id=detection.id)
     
     context = {
@@ -67,7 +67,7 @@ def execute_detection(request, detection_id):
         thread = threading.Thread(target=process_detection, args=(detection_id,))
         thread.start()
         
-        messages.info(request, '탐지 작업이 시작되었습니다.')
+        # messages.info(request, '탐지 작업이 시작되었습니다.')
         return redirect('vision_engine:detection_progress', detection_id=detection.id)
     
     context = {

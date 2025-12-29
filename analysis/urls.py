@@ -5,8 +5,10 @@ urlpatterns = [
     # 분석 시작 (전처리 선택)
     path('start/<int:video_id>/', views.StartAnalysisView.as_view(), name='start_analysis'),
 
-    # 전처리 파이프라인 추가/제거 (AJAX)
+    # 전처리 파이프라인 추가
     path('<int:analysis_id>/add-step/', views.AddPreprocessingStepView.as_view(), name='add_preprocessing_step'),
+    path('<int:analysis_id>/reorder-step/', views.ReorderPreprocessingStepView.as_view(), name='reorder_preprocessing_step'),
+    path('<int:analysis_id>/clear-pipeline/', views.ClearPipelineView.as_view(), name='clear_pipeline'),
     path('<int:analysis_id>/remove-step/', views.RemovePreprocessingStepView.as_view(), name='remove_preprocessing_step'),
 
     # 분석 실행

@@ -207,3 +207,10 @@ class Analysis(models.Model):
                 print(f"폴더 삭제 실패: {e}")
         
         return deleted_files
+    
+    def get_preprocessing_method_name(self, method_type):
+        """전처리 메서드 타입을 읽기 쉬운 이름으로 변환"""
+        from .preprocessing import VideoPreprocessor
+        
+        methods = VideoPreprocessor.PREPROCESSING_METHODS
+        return methods.get(method_type, method_type)

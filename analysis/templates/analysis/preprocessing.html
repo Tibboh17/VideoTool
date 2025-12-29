@@ -94,8 +94,24 @@
                     <div id="pipelineList" class="list-group">
                         {% if current_pipeline %}
                             {% for step in current_pipeline %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>{{ forloop.counter }}. {{ step }}</span>
+                            <div class="list-group-item d-flex justify-content-between align-items-center pipeline-item" data-index="{{ forloop.counter0 }}">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="drag-handle me-2" style="cursor: move;">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </div>
+                                    <span>{{ forloop.counter }}. {{ step }}</span>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm move-up-btn" title="위로">
+                                        <i class="bi bi-arrow-up"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm move-down-btn" title="아래로">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm delete-btn" title="삭제">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                             {% endfor %}
                         {% else %}
@@ -122,10 +138,6 @@
                 <div class="d-grid gap-2">
                     <button id="addStepBtn" class="btn text-white" style="background-color: #778ca3; border: none;" disabled>
                         파이프라인에 추가
-                    </button>
-                    <button id="removeStepBtn" class="btn w-100" style="background-color: #f1f2f6; border: 1px solid #ced4da; color: #57606f; font-size: 0.9rem;" 
-                    {% if not current_pipeline %}disabled{% endif %}>
-                        마지막 단계 제거
                     </button>
                     <button id="clearPipelineBtn" class="btn w-100" style="background-color: #fff5f5; border: 1px solid #ffa8a8; color: #e03131; font-size: 0.9rem;" 
                     {% if not current_pipeline %}disabled{% endif %}>
@@ -278,16 +290,100 @@ document.getElementById('addStepBtn').addEventListener('click', function() {
             document.getElementById('paramsPanel').style.display = 'none';
             
             // 버튼 활성화
-            document.getElementById('removeStepBtn').disabled = false;
             document.getElementById('clearPipelineBtn').disabled = false;
             document.getElementById('executeBtn').disabled = false;
         }
     });
 });
 
-// 마지막 단계 제거
-document.getElementById('removeStepBtn').addEventListener('click', function() {
+// ⭐ 특정 단계 삭제
+function deleteStep(index) {
     fetch(`/analysis/${analysisId}/remove-step/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            index: index
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updatePipelineDisplay(data.pipeline);
+            
+            if (data.pipeline.length === 0) {
+                document.getElementById('clearPipelineBtn').disabled = true;
+                document.getElementById('executeBtn').disabled = true;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('단계 삭제 중 오류가 발생했습니다.');
+    });
+}
+
+// ⭐ 단계 위로 이동
+function moveStepUp(index) {
+    if (index === 0) return; // 이미 맨 위
+    
+    fetch(`/analysis/${analysisId}/reorder-step/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            from_index: index,
+            to_index: index - 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updatePipelineDisplay(data.pipeline);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('순서 변경 중 오류가 발생했습니다.');
+    });
+}
+
+// ⭐ 단계 아래로 이동
+function moveStepDown(index, totalLength) {
+    if (index === totalLength - 1) return; // 이미 맨 아래
+    
+    fetch(`/analysis/${analysisId}/reorder-step/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            from_index: index,
+            to_index: index + 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updatePipelineDisplay(data.pipeline);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('순서 변경 중 오류가 발생했습니다.');
+    });
+}
+
+// 전체 초기화
+document.getElementById('clearPipelineBtn').addEventListener('click', function() {
+    if (!confirm('전체 파이프라인을 초기화하시겠습니까?')) return;
+    
+    fetch(`/analysis/${analysisId}/clear-pipeline/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -298,49 +394,17 @@ document.getElementById('removeStepBtn').addEventListener('click', function() {
     .then(data => {
         if (data.success) {
             updatePipelineDisplay(data.pipeline);
-            
-            if (data.pipeline.length === 0) {
-                document.getElementById('removeStepBtn').disabled = true;
-                document.getElementById('clearPipelineBtn').disabled = true;
-                document.getElementById('executeBtn').disabled = true;
-            }
+            document.getElementById('clearPipelineBtn').disabled = true;
+            document.getElementById('executeBtn').disabled = true;
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('초기화 중 오류가 발생했습니다.');
     });
 });
 
-// 전체 초기화
-document.getElementById('clearPipelineBtn').addEventListener('click', function() {
-    if (!confirm('전체 파이프라인을 초기화하시겠습니까?')) return;
-    
-    // 모든 단계 제거
-    const removeAll = () => {
-        fetch(`/analysis/${analysisId}/remove-step/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updatePipelineDisplay(data.pipeline);
-                
-                if (data.pipeline.length === 0) {
-                    document.getElementById('removeStepBtn').disabled = true;
-                    document.getElementById('clearPipelineBtn').disabled = true;
-                    document.getElementById('executeBtn').disabled = true;
-                } else {
-                    removeAll();  // 재귀 호출
-                }
-            }
-        });
-    };
-    
-    removeAll();
-});
-
-// 실행 버튼
+// 실행 버튼 - POST 요청으로 수정
 document.getElementById('executeBtn').addEventListener('click', function() {
     if (!confirm('전처리를 실행하시겠습니까? 동영상 길이에 따라 시간이 걸릴 수 있습니다.')) return;
     
@@ -371,11 +435,10 @@ document.getElementById('executeBtn').addEventListener('click', function() {
     });
 });
 
-// 파이프라인 표시 업데이트
+// ⭐ 파이프라인 표시 업데이트 (이벤트 리스너 추가)
 function updatePipelineDisplay(pipeline) {
     const list = document.getElementById('pipelineList');
     const count = document.getElementById('pipelineCount');
-    const emptyMessage = document.getElementById('emptyMessage');
     
     count.textContent = pipeline.length + '개';
     
@@ -383,23 +446,100 @@ function updatePipelineDisplay(pipeline) {
         list.innerHTML = '<div class="text-muted" id="emptyMessage">전처리 없음</div>';
     } else {
         list.innerHTML = pipeline.map((step, index) => `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span>${index + 1}. ${step}</span>
+            <div class="list-group-item d-flex justify-content-between align-items-center pipeline-item" data-index="${index}">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div class="drag-handle me-2" style="cursor: move;">
+                        <i class="bi bi-grip-vertical"></i>
+                    </div>
+                    <span>${index + 1}. ${step}</span>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm move-up-btn" title="위로" ${index === 0 ? 'disabled' : ''}>
+                        <i class="bi bi-arrow-up"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm move-down-btn" title="아래로" ${index === pipeline.length - 1 ? 'disabled' : ''}>
+                        <i class="bi bi-arrow-down"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm delete-btn" title="삭제">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
         `).join('');
+        
+        // 이벤트 리스너 재부착
+        attachPipelineEventListeners();
     }
 }
+
+// ⭐ 파이프라인 아이템 이벤트 리스너 부착
+function attachPipelineEventListeners() {
+    // 삭제 버튼
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const item = this.closest('.pipeline-item');
+            const index = parseInt(item.dataset.index);
+            if (confirm('이 단계를 삭제하시겠습니까?')) {
+                deleteStep(index);
+            }
+        });
+    });
+    
+    // 위로 이동 버튼
+    document.querySelectorAll('.move-up-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const item = this.closest('.pipeline-item');
+            const index = parseInt(item.dataset.index);
+            moveStepUp(index);
+        });
+    });
+    
+    // 아래로 이동 버튼
+    document.querySelectorAll('.move-down-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const item = this.closest('.pipeline-item');
+            const index = parseInt(item.dataset.index);
+            const totalLength = document.querySelectorAll('.pipeline-item').length;
+            moveStepDown(index, totalLength);
+        });
+    });
+}
+
+// 페이지 로드 시 이벤트 리스너 부착
+document.addEventListener('DOMContentLoaded', function() {
+    attachPipelineEventListeners();
+});
 </script>
 
 <style>
 #pipelineList .list-group-item {
     background-color: #f8f9fa;
     border-left: 4px solid #0d6efd;
+    transition: all 0.2s ease;
+}
+
+#pipelineList .list-group-item:hover {
+    background-color: #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.drag-handle {
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+.pipeline-item .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.pipeline-item:hover .btn-group {
+    opacity: 1;
 }
 
 button:disabled {
-    opacity: 0.4 !important;      /* 버튼을 투명하게 만들어 흐릿하게 보임 */
-    filter: grayscale(50%);      /* 색상을 회색으로 바꿈 */
+    opacity: 0.4 !important;
+    filter: grayscale(50%);
 }
 
 /* 빠른 시작 카드 강조 */

@@ -2,6 +2,7 @@
 
 {% block title %}{{ model.display_name|default:model.name }} - 모델 상세{% endblock %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="row">
     <div class="col-md-12">
@@ -14,6 +15,11 @@
             </ol>
         </nav>
 =======
+=======
+{% block breadcrumb %}
+<div class="row">
+    <div class="col-md-12">
+>>>>>>> Stashed changes
         <div class="breadcrumb-container">
             <nav aria-label="breadcrumb">
                 <ol class="custom-breadcrumb">
@@ -30,10 +36,18 @@
                 </ol>
             </nav>
         </div>
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
     </div>
 </div>
 
+=======
+    </div>
+</div>
+{% endblock breadcrumb %}
+
+{% block content %}
+>>>>>>> Stashed changes
 <!-- 모델 정보 -->
 <div class="row mb-4">
     <div class="col-md-12">
@@ -173,7 +187,11 @@
                     <a href="{% url 'modelhub:model_list' %}" 
                        class="btn btn-outline-secondary ms-auto">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                         <i class="bi bi-arrow-left"></i> 목록으로
+=======
+                        <i class="bi bi-list"></i> 목록으로
+>>>>>>> Stashed changes
 =======
                         <i class="bi bi-list"></i> 목록으로
 >>>>>>> Stashed changes
@@ -190,7 +208,11 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 <h5 class="mb-0"><i class="bi bi-list-check"></i> 이 모델을 사용한 탐지 결과</h5>
+=======
+                <h5 class="mb-0"><i class="bi bi-search"></i> 이 모델을 사용한 탐지 결과</h5>
+>>>>>>> Stashed changes
 =======
                 <h5 class="mb-0"><i class="bi bi-search"></i> 이 모델을 사용한 탐지 결과</h5>
 >>>>>>> Stashed changes
@@ -264,6 +286,10 @@
                                 </td>
                                 <td>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+                                    <div class="btn-group btn-group-sm">
+>>>>>>> Stashed changes
 =======
                                     <div class="btn-group btn-group-sm">
 >>>>>>> Stashed changes
@@ -274,12 +300,18 @@
                                         <i class="bi bi-eye"></i>
                                     </a>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
                                     <a href="{% url 'vision_engine:detection_delete' detection.id %}" 
                                         class="btn btn-outline-danger" 
                                         title="삭제">
                                         <i class="bi bi-trash"></i>
                                     </a>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                                     {% elif detection.status == 'processing' %}
                                     <a href="{% url 'vision_engine:detection_progress' detection.id %}" 
@@ -289,6 +321,10 @@
                                     </a>
                                     {% endif %}
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+                                    </div>
+>>>>>>> Stashed changes
 =======
                                     </div>
 >>>>>>> Stashed changes
@@ -304,8 +340,13 @@
                     <h5 class="mt-3 text-muted">아직 이 모델을 사용한 탐지가 없습니다</h5>
                     <p class="text-muted">분석이 완료된 미디어에서 이 모델로 객체 탐지를 시작하세요.</p>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                     <a href="{% url 'video_list' %}" class="btn btn-primary">
                         <i class="bi bi-film"></i> 미디어 목록으로
+=======
+                    <a href="{% url 'media_list' %}" class="btn btn-primary">
+                        <i class="bi bi-list"></i> 목록으로
+>>>>>>> Stashed changes
 =======
                     <a href="{% url 'media_list' %}" class="btn btn-primary">
                         <i class="bi bi-list"></i> 목록으로

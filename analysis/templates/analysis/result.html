@@ -2,6 +2,7 @@
 
 {% block title %}분석 결과 - {{ media.title }}{% endblock %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="row">
     <div class="col-md-12">
@@ -39,7 +40,33 @@
         </div>
     </div>
 </div>
+=======
+{% block breadcrumb_items %}
+<li class="custom-breadcrumb-item">
+    {% if media_type == 'image' %}
+    <a href="{% url 'image_detail' media.id %}">
+        <i class="bi bi-image"></i> 이미지 상세
+    </a>
+    {% else %}
+    <a href="{% url 'video_detail' media.id %}">
+        <i class="bi bi-camera-video"></i> 동영상 상세
+    </a>
+    {% endif %}
+</li>
+<li class="custom-breadcrumb-item" >
+    <a href="{% url 'start_analysis' media.id %}">
+        <i class="bi bi-layers-half"></i> 전처리
+    </a>
+</li>
+<li class="custom-breadcrumb-item active" >
+    <a href="{% url 'analysis_result' analysis.id %}">
+        <i class="bi bi-clipboard-data"></i> 전처리 결과
+    </a>
+</li>
+{% endblock %}
+>>>>>>> Stashed changes
 
+{% block content %}
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-3 border-0 shadow-sm">

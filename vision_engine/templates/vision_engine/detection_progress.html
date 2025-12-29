@@ -2,6 +2,7 @@
 
 {% block title %}탐지 진행 중 - {{ detection.title }}{% endblock %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="row">
     <div class="col-md-12">
@@ -19,6 +20,44 @@
     </div>
 </div>
 
+=======
+{% block breadcrumb_items %}
+<!-- 2단계: 미디어 상세 -->
+    <li class="custom-breadcrumb-item">
+        {% if detection.analysis.video %}
+        <a href="{% url 'video_detail' detection.analysis.video.id %}">
+            <i class="bi bi-camera-video"></i> 동영상 상세
+        </a>
+        {% elif detection.analysis.image %}
+        <a href="{% url 'image_detail' detection.analysis.image.id %}">
+            <i class="bi bi-image"></i> 이미지 상세
+        </a>
+        {% endif %}
+    </li>
+
+    <!-- 3단계: 분석 결과 -->
+    <li class="custom-breadcrumb-item">
+        <a href="{% url 'analysis_result' detection.analysis.id %}">
+            <i class="bi bi-clipboard-data"></i> 전처리 결과
+        </a>
+    </li>
+
+    <!-- 4단계: 모델 선택 -->
+    <li class="custom-breadcrumb-item">
+        <a href="{% url 'vision_engine:select_model' detection.analysis.id %}">
+            <i class="bi bi-cpu-fill"></i> 모델 선택
+        </a>
+    </li>
+
+    <!-- 5단계: 현재 페이지 -->
+    <li class="custom-breadcrumb-item active">
+        <i class="bi bi-hourglass-split"></i> 탐지 진행 중
+    </li>
+{% endblock %}
+
+
+{% block content %}
+>>>>>>> Stashed changes
 <div class="row">
     <div class="col-md-8 offset-md-2">
         <div class="card border-0 shadow-sm">

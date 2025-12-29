@@ -2,6 +2,23 @@
 
 {% block title %}탐지 삭제 - {{ detection.title }}{% endblock %}
 
+<<<<<<< Updated upstream
+=======
+{% block breadcrumb_items %}
+<!-- 2단계: 탐지 작업 -->
+<li class="custom-breadcrumb-item">
+    <a href="{% url 'vision_engine:detection_list' %}">
+        <i class="bi bi-search"></i> 탐지 작업
+    </a>
+</li>
+
+<!-- 3단계: 현재 페이지 -->
+<li class="custom-breadcrumb-item active">
+    <i class="bi bi-trash"></i> 탐지 삭제
+</li>
+{% endblock %}
+
+>>>>>>> Stashed changes
 {% block content %}
 <div class="row">
     <div class="col-md-6 offset-md-3">

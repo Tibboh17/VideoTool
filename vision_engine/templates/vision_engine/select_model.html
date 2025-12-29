@@ -2,6 +2,7 @@
 
 {% block title %}모델 선택 - {{ analysis.video.title }}{% endblock %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="row">
     <div class="col-md-12">
@@ -19,6 +20,38 @@
     </div>
 </div>
 
+=======
+{% block breadcrumb_items %}
+<!-- 2단계: 미디어 상세 -->
+<li class="custom-breadcrumb-item">
+    {% if analysis.video %}
+    <a href="{% url 'video_detail' analysis.video.id %}">
+        <i class="bi bi-camera-video"></i> 동영상 상세
+    </a>
+    {% elif analysis.image %}
+    <a href="{% url 'image_detail' analysis.image.id %}">
+        <i class="bi bi-image"></i> 이미지 상세
+    </a>
+    {% endif %}
+</li>
+
+<!-- 3단계: 분석 결과 -->
+<li class="custom-breadcrumb-item">
+    <a href="{% url 'analysis_result' analysis.id %}">
+        <i class="bi bi-clipboard-data"></i> 전처리 결과
+    </a>
+</li>
+
+<!-- 4단계: 현재 페이지 -->
+<li class="custom-breadcrumb-item active">
+    <a href="#">
+        <i class="bi bi-cpu-fill"></i> 모델 선택
+    </a>
+</li>
+{% endblock %}
+
+{% block content %}
+>>>>>>> Stashed changes
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card border-0 shadow-sm">

@@ -70,10 +70,9 @@ INSTALLED_APPS = [
     "modelhub",
     "vision_engine",
 
-
+    "django_extensions",
     # 추후 추가 예정
-    # "monitoring",
-    
+    # "monitoring",    
 
 ]
 

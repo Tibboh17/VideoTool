@@ -25,7 +25,9 @@
 
     <!-- 3단계: 전처리 진행 중 (현재 - 활성화) -->
     <li class="custom-breadcrumb-item active">
-        <i class="bi bi-hourglass-split"></i> 전처리 중
+        <a href="#">
+            <i class="bi bi-hourglass-split"></i> 전처리 중
+        </a>
     </li>
 
     <!-- 4단계: 전처리 결과 (비활성화) -->
@@ -45,7 +47,7 @@
     <!-- 6단계: 탐지 실행 (비활성화) -->
     <li class="custom-breadcrumb-item disabled">
         <span class="text-muted">
-            <i class="bi bi-play-circle-fill"></i> 탐지 실행
+            <i class="bi bi-play-circle-fill"></i> 모델 실행
         </span>
     </li>
 
@@ -59,9 +61,9 @@
 
 {% block content %}
 <div class="container" style="max-width: 800px;">
-    <h1 class="mb-4 text-center">
+    <!-- <h1 class="mb-4 text-center">
         <i class="bi bi-hourglass-split"></i> 분석 진행 중
-    </h1>
+    </h1> -->
 
     <div class="card shadow-sm">
         <div class="card-body p-4">

@@ -40,7 +40,7 @@
     <!-- 5단계: 탐지 실행 (비활성화) -->
     <li class="custom-breadcrumb-item disabled">
         <span class="text-muted">
-            <i class="bi bi-play-circle-fill"></i> 탐지 실행
+            <i class="bi bi-play-circle-fill"></i> 모델 실행
         </span>
     </li>
 
@@ -472,7 +472,7 @@ document.getElementById('executeBtn').addEventListener('click', function() {
     });
 });
 
-// ⭐ 파이프라인 표시 업데이트 (이벤트 리스너 추가)
+// 파이프라인 표시 업데이트 (이벤트 리스너 추가)
 function updatePipelineDisplay(pipeline) {
     const list = document.getElementById('pipelineList');
     const count = document.getElementById('pipelineCount');

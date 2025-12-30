@@ -45,7 +45,9 @@
 
     <!-- 5단계: 탐지 실행 (현재 - 활성화) -->
     <li class="custom-breadcrumb-item active">
-        <i class="bi bi-hourglass-split"></i> 탐지 진행 중
+        <a href="#">
+            <i class="bi bi-hourglass-split"></i> 탐지 진행 중
+        </a> 
     </li>
 
     <!-- 6단계: 탐지 결과 (비활성화) -->
@@ -139,12 +141,12 @@
                 
                 <!-- 버튼 -->
                 <div class="d-grid gap-2">
-                    <a href="{% url 'vision_engine:detection_result' detection.id %}" 
-                       id="result-btn" 
-                       class="btn btn-success btn-lg" 
-                       style="display: none;">
+                    <!-- ⭐ 수정: display: none → disabled -->
+                    <button id="result-btn" 
+                            class="btn btn-success btn-lg" 
+                            {% if detection.status != 'completed' %}disabled{% endif %}>
                         <i class="bi bi-check-circle"></i> 결과 보기
-                    </a>
+                    </button>
                     <a href="{% url 'vision_engine:detection_list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-list"></i> 목록으로
                     </a>
@@ -174,14 +176,31 @@ function updateProgress() {
             
             // 상태 업데이트
             let statusBadge = document.getElementById('status-badge');
+            let resultBtn = document.getElementById('result-btn');
+            
             if (data.status === 'completed') {
                 statusBadge.innerHTML = '<span class="badge bg-success">완료</span>';
-                document.getElementById('result-btn').style.display = 'block';
+                
+                // ⭐ 수정: 버튼 활성화 및 클릭 이벤트 추가
+                resultBtn.disabled = false;
+                resultBtn.onclick = function() {
+                    window.location.href = `/vision/{{ detection.id }}/result/`;
+                };
+                
+                // 진행률 애니메이션 제거
+                document.getElementById('progress-bar').classList.remove('progress-bar-animated');
+                
                 clearInterval(pollInterval);
             } else if (data.status === 'failed') {
                 statusBadge.innerHTML = '<span class="badge bg-danger">실패</span>';
                 document.getElementById('error-container').style.display = 'block';
                 document.getElementById('error-message').textContent = data.error_message;
+                
+                // 진행률 바 색상 변경
+                let progressBar = document.getElementById('progress-bar');
+                progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+                progressBar.classList.add('bg-danger');
+                
                 clearInterval(pollInterval);
             } else if (data.status === 'processing') {
                 statusBadge.innerHTML = '<span class="badge bg-warning">처리 중</span>';
@@ -198,4 +217,16 @@ pollInterval = setInterval(updateProgress, 2000);
 // 페이지 로드 시 즉시 업데이트
 updateProgress();
 </script>
+
+<style>
+/* ⭐ 비활성화된 버튼 스타일 */
+#result-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#result-btn:not(:disabled) {
+    cursor: pointer;
+}
+</style>
 {% endblock %}

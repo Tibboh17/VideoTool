@@ -8,6 +8,35 @@
     {% endif %}
 {% endblock %}
 
+{% block breadcrumb %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="breadcrumb-container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="custom-breadcrumb-item " >
+                        <a href="{% url 'modelhub:model_list' %}">
+                            <i class="bi bi-box-seam"></i> 모델 허브
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item" >
+                        <a href="{% url 'modelhub:model_detail' model_type model.id %}">
+                            <i class="bi bi-box-seam"></i> {{ model.display_name|default:model.name }}
+                        </a>
+                    </li>
+                    <li class="custom-breadcrumb-item active" >
+                        <a href="#">
+                            <i class="bi bi-trash"></i> {{ model.display_name|default:model.name }} 모델 삭제
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock breadcrumb %}
+
+
 {% block content %}
 <div class="container" style="max-width: 600px;">
     <div class="card border-danger">
